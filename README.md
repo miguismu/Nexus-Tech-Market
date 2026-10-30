@@ -93,7 +93,7 @@ Además, el guardian `nexus-siempre-activo.ps1` (tarea programada **NEXUS-Siempr
 
 Si el equipo se reinicia, vuelve a ejecutar `py iniciar_nexus.py`. El código del panel y la base de datos no cambian. Para crear el certificado local (candado en Chrome) usa `py make_cert.py` una sola vez.
 
-**Dirección oficial del proyecto:** <https://nexus.con> (dominio propio pendiente de registro; localmente la tienda corre en <http://localhost:5000>).
+**Dirección oficial del proyecto:** <https://nexus.com> (dominio propio pendiente de registro; localmente la tienda corre en <http://localhost:5000>).
 
 **Repositorio del proyecto:** <https://github.com/miguismu/Nexus-Tech-Market>
 
