@@ -1,5 +1,6 @@
 "use strict";
 
+const NEXUS_OFFICIAL_URL = "https://nexus.con"; // Dirección oficial del proyecto NEXUS Tech Market
 const API_HOST = window.location.hostname || "127.0.0.1";
 const API_PROTOCOL = window.location.protocol === "https:" ? "https:" : "http:";
 const API_BASE = (window.NEXUS_API_URL || (window.location.protocol === "https:"

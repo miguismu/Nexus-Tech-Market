@@ -89,7 +89,13 @@ py iniciar_nexus.py            # inicia NEXUS siempre activo en http://localhost
 py iniciar_nexus.py --detener  # detiene el servidor
 ```
 
+Además, el guardian `nexus-siempre-activo.ps1` (tarea programada **NEXUS-SiempreActivo**) verifica cada 60 segundos que la página responda y la reinicia sola si llega a caer; también arranca al iniciar sesión de Windows. Registro del guardian: `nexus-guardian.log`.
+
 Si el equipo se reinicia, vuelve a ejecutar `py iniciar_nexus.py`. El código del panel y la base de datos no cambian. Para crear el certificado local (candado en Chrome) usa `py make_cert.py` una sola vez.
+
+**Dirección oficial del proyecto:** <https://nexus.con> (dominio propio pendiente de registro; localmente la tienda corre en <http://localhost:5000>).
+
+**Repositorio del proyecto:** <https://github.com/miguismu/Nexus-Tech-Market>
 
 **Administrador del panel:** Miguel Alejandro Muñoz Suárez (nombre completo + código de `.admin-code`).
 
