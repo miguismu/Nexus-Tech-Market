@@ -1,0 +1,23 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v10.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v10.0": {
+      "NexusHttpsHost/1.0.0": {
+        "runtime": {
+          "NexusHttpsHost.dll": {}
+        }
+      }
+    }
+  },
+  "libraries": {
+    "NexusHttpsHost/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    }
+  }
+}

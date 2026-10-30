@@ -1,0 +1,10 @@
+{
+    "liveServer.settings.https":  {
+                                      "enable":  true,
+                                      "cert":  "./certs/localhost.crt",
+                                      "key":  "./certs/localhost.key",
+                                      "passphrase":  ""
+                                  },
+    "liveServer.settings.CustomBrowser":  "chrome",
+    "liveServer.settings.port":  5500
+}

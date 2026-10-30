@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080d18">
+  <meta name="description" content="NEXUS, catálogo y simulador de solicitudes de compra de tecnología.">
+  <title>NEXUS — Tecnología con propósito</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+  <script defer src="assistant.js"></script>
+</head>
+<body>
+  <div class="announcement"><span class="status-dot"></span> PROYECTO ACADÉMICO</div>
+  <header class="site-header">
+    <a class="brand" href="index.html" aria-label="NEXUS, inicio">
+      <span class="brand-mark">N<span>.</span></span>
+      <span class="brand-name">NEXUS<span class="brand-caption">TECH MARKET</span></span>
+    </a>
+    <nav class="main-nav" aria-label="Navegación principal">
+      <a class="nav-link nav-link-active" href="index.html">Catálogo</a>
+      <a class="nav-link" href="vision.html">Nuestra visión</a>
+      <button class="nav-link admin-nav-tab admin-open" type="button">Administrador</button>
+    </nav>
+    <div class="header-actions">
+      <button class="icon-button cart-open" type="button" aria-label="Abrir carrito">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2l2.2 11.1a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"></path><circle cx="10" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle></svg>
+        <span class="cart-label">Carrito</span><span class="cart-count" id="cart-count">0</span>
+      </button>
+      <button class="mobile-menu" id="mobile-menu" type="button" aria-label="Abrir menú">☰</button>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="eyebrow-line"></span> TU PRÓXIMA IDEA EMPIEZA AQUÍ</div>
+        <h1>La tecnología<br>que te lleva <span>más lejos.</span></h1>
+        <p>Explora, solicita y haz realidad tus proyectos. Todo el hardware que necesitas, en un solo lugar.</p>
+        <form class="verify-box hero-verify" id="verify-form"><input class="verify-input" id="verify-code" maxlength="40" placeholder="PIN o código PAY-XXXXXX-XXXX" aria-label="PIN o código de compra"><button class="button button-outline verify-button" type="submit">Verificar</button></form>
+        <div class="verify-result" id="verify-result" hidden></div>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#catalogo">Explorar catálogo <span aria-hidden="true">↗</span></a>
+          <span class="hero-note"><span aria-hidden="true">✳</span> Solicitudes con aprobación<br>simulada</span>
+        </div>
+        <div class="hero-stats" aria-label="Resumen del catálogo"><div><b>40<span>+</span></b><small>Productos</small></div><div><b>9</b><small>Categorías</small></div><div><b>100<span>%</span></b><small>Simulado</small></div></div>
+      </div>
+      <div class="hero-art hero-art-cover">
+        <img class="hero-cover" src="images/nexus-gaming-setup.jpg" alt="Setup gamer con torre iluminada, monitor panorámico, teclado y periféricos" fetchpriority="high">
+        <div class="setup-badge"><span class="status-dot"></span><span><b>Arma tu setup</b><small>Hecho a tu medida</small></span><span aria-hidden="true">↗</span></div>
+      </div>
+      <div class="hero-bottom"><span>01</span><span>NEXUS HARDWARE</span></div>
+      <div class="hero-recommend"><span class="recommend-icon" aria-hidden="true">✦</span><div><small>RECOMENDADO PARA TI <span>AI</span></small><b>Batería compatible HP HT03XL</b><small>TensorFlow.js · selección según categoría, calificación y presupuesto.</small></div><div class="recommend-price"><small>DESDE</small><b>$123.500</b></div><a class="recommend-add" href="#catalogo" aria-label="Ver batería HP HT03XL en el catálogo">+</a></div>
+    </section>
+
+    <section class="trust-strip" aria-label="Ventajas">
+      <div><span class="trust-number">01</span><span><b>Catálogo diverso</b><small>Dispositivos y componentes</small></span></div>
+      <div><span class="trust-number">02</span><span><b>Decisiones claras</b><small>Seguimiento de solicitudes</small></span></div>
+      <div><span class="trust-number">03</span><span><b>Compra simulada</b><small>Sin cobros ni pagos reales</small></span></div>
+    </section>
+
+    <section class="catalog-section section-wrap" id="catalogo">
+      <div class="section-heading">
+        <div><div class="eyebrow"><span class="eyebrow-line"></span> HECHO PARA DESCUBRIR</div><h2>Encuentra tu <span>próximo equipo.</span></h2></div>
+        <p>Explora por categoría o busca un producto. Añádelo al carrito para crear una solicitud de compra simulada.</p>
+      </div>
+      <div class="catalog-controls">
+        <div class="category-filters" id="category-filters" role="group" aria-label="Filtrar por categoría"></div>
+        <label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 4 4"></path></svg><input id="search-input" type="search" placeholder="Buscar tecnología..." autocomplete="off"><kbd>Ctrl K</kbd></label>
+      </div>
+      <div class="catalog-meta"><span id="results-count">Cargando catálogo...</span><span>Precios de referencia académica <i class="info-mark" title="No son cotizaciones verificadas en tiempo real.">i</i></span></div>
+      <div class="product-grid" id="product-grid" aria-live="polite"></div>
+    </section>
+
+    <section class="quote-banner section-wrap">
+      <div class="quote-mark">“</div>
+      <div><p>La tecnología conecta ideas con posibilidades. Que cada elección te acerque a lo que quieres construir.</p><span>UNA IDEA QUE CONECTA · NEXUS</span></div>
+      <a class="button button-outline" href="vision.html">Descubre nuestra visión <span>↗</span></a>
+    </section>
+
+    <section class="security-note section-wrap">
+      <span class="security-icon">⌑</span>
+      <div><b>Una simulación responsable, desde el primer clic.</b><p>No almacenamos datos de pago ni enviamos pedidos a tiendas. Las solicitudes y decisiones se guardan en la base de datos de tu entorno local.</p></div>
+      <span class="security-tag"><i class="status-dot"></i> Entorno de demostración</span>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="brand" href="index.html"><span class="brand-mark">N<span>.</span></span><span class="brand-name">NEXUS<span class="brand-caption">TECH MARKET</span></span></a>
+    <p>Una idea que conecta. Tecnología para lo que sigue.</p>
+    <div><a href="vision.html">Misión y visión</a><span>·</span><span>Proyecto académico</span></div>
+    <small>Proyecto final · Miguel Alejandro Muñoz Suárez · Politécnico Superior de Occidente · Presentado a Dioni Rodallega Murillo · © 2026 NEXUS</small>
+  </footer>
+
+  <div class="drawer-backdrop" id="drawer-backdrop"></div>
+  <aside class="side-drawer" id="cart-drawer" aria-labelledby="cart-title" aria-hidden="true">
+    <div class="drawer-header"><div><span class="eyebrow">TU SELECCIÓN</span><h2 id="cart-title">Carrito <span id="drawer-count">(0)</span></h2></div><button class="close-button drawer-close" type="button" aria-label="Cerrar carrito">×</button></div>
+    <div class="cart-items" id="cart-items"></div>
+    <div class="cart-footer"><div class="cart-total"><span>Total estimado</span><b id="cart-total">$0</b></div><small>Valor de referencia. Esta simulación no realiza ningún cobro.</small><button class="button button-primary checkout-open" id="checkout-open" type="button" disabled>Crear solicitud <span>→</span></button></div>
+  </aside>
+
+  <dialog class="modal product-detail-modal" id="product-detail-modal" aria-labelledby="product-detail-title">
+    <div class="modal-content product-detail-modal-content">
+      <div class="modal-top"><span class="eyebrow">NEXUS · DETALLE DEL PRODUCTO</span><button class="close-button product-detail-close" type="button" aria-label="Cerrar ficha del producto">×</button></div>
+      <div id="product-detail-content"></div>
+    </div>
+  </dialog>
+
+  <dialog class="modal" id="checkout-modal">
+    <form id="checkout-form" class="modal-content">
+      <div class="modal-top"><span class="eyebrow">SOLICITUD DE COMPRA</span><button class="close-button modal-close" type="button" aria-label="Cerrar">×</button></div>
+      <h2>Un paso más.</h2><p>Ingresa tus datos para registrar una solicitud académica. No se hará ningún cobro.</p>
+      <label class="field-label" for="customer-name">Nombre completo</label><input class="form-input" id="customer-name" name="name" minlength="2" maxlength="100" required autocomplete="name" placeholder="Tu nombre">
+      <label class="field-label" for="customer-email">Correo electrónico</label><input class="form-input" id="customer-email" name="email" type="email" maxlength="254" required autocomplete="email" placeholder="nombre@ejemplo.com">
+      <div class="form-summary"><span>Artículos seleccionados</span><b id="checkout-summary"></b></div>
+      <button class="button button-primary button-full" id="checkout-submit" type="submit">Enviar solicitud <span>→</span></button>
+      <p class="form-footnote">Los datos solo se usan para esta demostración local.</p>
+    </form>
+  </dialog>
+
+  <section class="order-download section-wrap" id="order-download" hidden aria-live="polite">
+    <div><span class="eyebrow">SOLICITUD REGISTRADA</span><p id="order-download-label">Tu constancia de registro está lista.</p></div>
+    <button class="button button-primary" id="download-order-record" type="button">Descargar constancia</button>
+  </section>
+
+  <dialog class="modal" id="admin-modal">
+    <div class="modal-content admin-content">
+      <div class="modal-top"><span class="eyebrow">CENTRO DE DECISIONES</span><button class="close-button admin-close" type="button" aria-label="Cerrar">×</button></div>
+      <div class="admin-modal-identity"><span class="admin-modal-avatar" aria-hidden="true">MA</span><div><small>ADMINISTRADOR DEL PROYECTO</small><b>Miguel Alejandro Muñoz Suárez</b><span>Programado a Código Abierto</span></div></div>
+      <h2>Panel de revisión.</h2>
+      <p>Ingresa como administrador con tu nombre completo y el código que muestra la terminal del backend. Solo solicitudes pendientes pueden aprobarse o rechazarse.</p>
+      <form id="admin-login-form"><label class="field-label" for="admin-name">Administrador</label><input class="form-input" id="admin-name" name="admin" type="text" minlength="5" maxlength="128" required autocomplete="name" placeholder="Miguel Alejandro Muñoz Suárez"><label class="field-label" for="admin-code">Código de seguridad local</label><input class="form-input" id="admin-code" name="code" type="password" minlength="8" maxlength="128" required autocomplete="current-password" placeholder="Ingresa el código de la terminal"><button class="button button-primary button-full" type="submit">Ingresar al panel <span>→</span></button></form>
+      <div id="admin-panel" class="admin-panel" hidden><div class="admin-panel-heading"><b>Solicitudes recientes</b><button class="text-button" id="admin-logout" type="button">Cerrar sesión</button></div><div id="admin-orders"></div></div>
+      <p class="form-footnote">Código de demostración, sin cuentas ni compras reales. Para publicar el proyecto, usa HTTPS y un sistema de identidad robusto.</p>
+    </div>
+  </dialog>
+
+  <section class="chat-widget" id="chat-widget" aria-label="Asistente de atención">
+    <div class="chat-panel" id="chat-panel" hidden>
+      <div class="chat-heading"><span class="chat-avatar" aria-hidden="true">N</span><div><b>Asistente Extremo NEXUS · V2</b><small><i class="status-dot"></i> Voz propia · órbita dorada · sin IA generativa</small></div><button class="chat-window-button chat-minimize" type="button" aria-label="Minimizar chat">−</button><button class="chat-window-button chat-expand" type="button" aria-label="Ampliar chat">□</button><button class="close-button chat-close" type="button" aria-label="Cerrar chat">×</button></div>
+      <div class="chat-orb-stage" id="chat-orb-stage" aria-hidden="true">
+        <div class="orb-particles">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <span class="chat-orb"><b class="orb-core"></b><b class="orb-shine"></b><b class="orb-ring"></b></span>
+        <span class="orb-caption" id="orb-caption">En línea · Escríbeme o háblame</span>
+      </div>
+      <div class="chat-messages" id="chat-messages" aria-live="polite"><div class="chat-message bot-message">¡Hola! Soy <b>Extremo NEXUS</b>, tu copiloto de compras. Pregúntame por catálogo, cotizaciones, códigos de compra o cómo enviar tu solicitud. También puedes hablar conmigo por voz. 🎙</div><div class="chat-suggestions"><button type="button">¿Cómo compro?</button><button type="button">¿Qué es el código PAY?</button><button type="button">Háblame de tu voz</button></div></div>
+      <form class="chat-form" id="chat-form"><button class="chat-voice-button" id="chat-voice-input" type="button" aria-label="Hablar para escribir" title="Dictar mensaje">🎙</button><input id="chat-input" maxlength="300" aria-label="Escribe tu mensaje o dicta por voz" placeholder="Escribe o dicta tu consulta..." autocomplete="off" required><button class="chat-voice-button" id="chat-voice-toggle" type="button" aria-label="Activar voz de respuestas" aria-pressed="false" title="Activar respuestas habladas"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="2.5" width="6" height="12" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3.5M9 21.5h6"></path></svg></button><button type="submit" aria-label="Enviar mensaje">↑</button></form>
+      <div class="chat-voice-status" id="chat-voice-status" aria-live="polite">Dictado y lectura dependen del soporte de voz del navegador.</div>
+      <div class="chat-disclaimer">Clasificador opcional · Voz del navegador · Sin pagos ni IA generativa</div>
+    </div>
+    <button class="chat-launcher" id="chat-launcher" type="button" aria-expanded="false" aria-controls="chat-panel"><span class="launcher-orb"><span class="launcher-orb-core"></span></span><span>¿Te ayudamos?</span></button>
+  </section>
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>

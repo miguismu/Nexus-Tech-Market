@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "NEXUS: iniciar sitio HTTPS local",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--no-launch-profile",
+        "--project",
+        "${workspaceFolder}\\secure-host\\NexusHttpsHost.csproj"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "DOTNET_CLI_HOME": "${workspaceFolder}\\.dotnet-cli"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "base": "$msCompile",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Compilando.*",
+          "endsPattern": ".*Now listening on: https://localhost:5500.*"
+        }
+      },
+      "runOptions": {
+        "runOn": "folderOpen",
+        "instanceLimit": 1
+      }
+    }
+  ]
+}
