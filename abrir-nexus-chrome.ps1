@@ -12,4 +12,5 @@ if (-not $chromePath) {
     throw "No se encontró Google Chrome. Instálalo para abrir NEXUS automáticamente."
 }
 
-Start-Process -FilePath $chromePath -ArgumentList "https://localhost:5500/"
+$siteUrl = "https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5500/"
+Start-Process -FilePath $chromePath -ArgumentList $siteUrl

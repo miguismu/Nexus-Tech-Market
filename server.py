@@ -21,6 +21,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship,
 
 ROOT = Path(__file__).resolve().parent
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+LOCAL_SITE_ORIGIN = "https://miguismu-nexus-tech-market.127.0.0.1.sslip.io"
 ALLOWED_ORIGINS = {
     "http://127.0.0.1:5500",
     "http://localhost:5500",
@@ -30,6 +31,8 @@ ALLOWED_ORIGINS = {
     "https://localhost:5500",
     "https://127.0.0.1:5501",
     "https://localhost:5501",
+    f"{LOCAL_SITE_ORIGIN}:5500",
+    f"{LOCAL_SITE_ORIGIN}:5501",
 }
 PRODUCT_FIELDS = ("id", "name", "category", "tag", "description", "price", "glyph")
 

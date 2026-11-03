@@ -3,9 +3,8 @@
 
 Ejecuta:  python make_cert.py
 
-Crea certs/localhost.crt y certs/localhost.key con el nombre "localhost" y
-confía el certificado en el almacén de Windows (Usuarios actuales), de modo que
-Chrome muestre el candado al abrir https://localhost:5500.
+Crea certs/localhost.crt y certs/localhost.key para localhost y el dominio local
+de NEXUS, y confía el certificado en el almacén del usuario actual de Windows.
 """
 
 from __future__ import annotations
@@ -18,6 +17,7 @@ ROOT = Path(__file__).resolve().parent
 CERT_DIR = ROOT / "certs"
 CERT_FILE = CERT_DIR / "localhost.crt"
 KEY_FILE = CERT_DIR / "localhost.key"
+SITE_HOSTNAME = "miguismu-nexus-tech-market.127.0.0.1.sslip.io"
 
 
 def _run(command: list[str]) -> bool:
@@ -58,7 +58,12 @@ def generate_certificate() -> bool:
         key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
         name = x509.Name([x509.NameAttribute(NameOID.COMMON_NAME, "localhost")])
         san = x509.SubjectAlternativeName(
-            [x509.DNSName("localhost"), x509.DNSName("127.0.0.1"), x509.IPAddress(ipaddress.IPv4Address("127.0.0.1"))]
+            [
+                x509.DNSName("localhost"),
+                x509.DNSName(SITE_HOSTNAME),
+                x509.DNSName("127.0.0.1"),
+                x509.IPAddress(ipaddress.IPv4Address("127.0.0.1")),
+            ]
         )
         now = datetime.datetime.now(datetime.timezone.utc)
         cert = (
@@ -90,7 +95,7 @@ def generate_certificate() -> bool:
         "req", "-x509", "-newkey", "rsa:2048", "-nodes",
         "-keyout", str(KEY_FILE), "-out", str(CERT_FILE),
         "-days", "825", "-subj", "/CN=localhost",
-        "-addext", "subjectAltName=DNS:localhost,DNS:127.0.0.1,IP:127.0.0.1",
+        "-addext", f"subjectAltName=DNS:localhost,DNS:{SITE_HOSTNAME},DNS:127.0.0.1,IP:127.0.0.1",
         "-addext", "extendedKeyUsage=serverAuth",
     ]
     return _run(command)
@@ -99,23 +104,23 @@ def generate_certificate() -> bool:
 def trust_certificate() -> None:
     try:
         result = subprocess.run(
-            [
-                "powershell", "-NoProfile", "-Command",
-                "Import-Certificate -FilePath '%s' -CertStoreLocation Cert:\\CurrentUser\\Root"
-                % CERT_FILE,
-            ],
+            ["certutil", "-user", "-addstore", "-f", "Root", str(CERT_FILE)],
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=30,
         )
         if result.returncode == 0:
             print("Certificado instalado en CurrentUser\\Root.")
         else:
-            print("No se pudo instalar el certificado. Ejecuta este script con la cuenta que usa Chrome.")
-    except Exception as error:  # noqa: BLE001
+            print(result.stderr or result.stdout)
+            print("No se pudo instalar el certificado. Ejecútalo con la cuenta que usa Chrome.")
+    except (OSError, subprocess.TimeoutExpired) as error:
         print("No se pudo confiar el certificado automáticamente:", error)
 
 
 if __name__ == "__main__":
     if generate_certificate():
         trust_certificate()
-        print("Listo. Ejecuta `py run_https.py` y abre https://localhost:5500")
+        print(f"Certificado listo para https://{SITE_HOSTNAME}:5501/")

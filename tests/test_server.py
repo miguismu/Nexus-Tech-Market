@@ -138,6 +138,18 @@ class NexusApiTests(unittest.TestCase):
         vision.close()
         self.assertEqual(self.client.get("/.env").status_code, 404)
 
+    def test_miguismu_local_domain_is_allowed_for_live_server_api(self):
+        origin = "https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5501"
+        response = self.client.get("/api/health", headers={"Origin": origin})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("Access-Control-Allow-Origin"), origin)
+        self.assertEqual(response.headers.get("Access-Control-Allow-Credentials"), "true")
+        untrusted = self.client.get(
+            "/api/health",
+            headers={"Origin": "https://example.com"},
+        )
+        self.assertNotIn("Access-Control-Allow-Origin", untrusted.headers)
+
     def test_startup_refreshes_existing_catalog_prices(self):
         catalog_row = _catalog_rows()[0]
         with tempfile.TemporaryDirectory() as directory:
