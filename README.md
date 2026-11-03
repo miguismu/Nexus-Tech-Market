@@ -43,7 +43,7 @@ La comprobación local de la API está en `http://127.0.0.1:5000/api/health` (so
 
 ## Usar PostgreSQL
 
-PostgreSQL no es necesario para la demostración local: SQLite ya guarda solicitudes y decisiones. Para usar PostgreSQL, instala PostgreSQL desde su sitio oficial, crea una base llamada `nexus` y configura `DATABASE_URL` en la terminal antes de iniciar el backend:
+PostgreSQL no es necesario para la demostración local: SQLite guarda catálogo, solicitudes, decisiones y metadatos de la aplicación. La tabla `application_metadata` documenta el propósito, funciones, contenido y límites del sistema; SQLAlchemy la actualiza al arrancar. Para usar PostgreSQL, instala PostgreSQL desde su sitio oficial, crea una base llamada `nexus` y configura `DATABASE_URL` en la terminal antes de iniciar el backend:
 
 ```powershell
 $env:DATABASE_URL = "postgresql+psycopg://localhost:5432/nexus"
@@ -91,7 +91,7 @@ Para registrar e iniciar la tarea automática de Windows, ejecuta una vez desde 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\registrar-tarea.ps1
 ```
 
-El guardián **NEXUS-SiempreActivo** mantiene activa la API y el sitio HTTPS, abre la página local en Chrome y reinicia los servicios si dejan de responder. En este computador Windows denegó el registro de una tarea programada formal; por ello quedó instalado `NEXUS-SiempreActivo.lnk` en la carpeta Inicio del usuario. Esto inicia NEXUS automáticamente **después de que ese usuario inicia sesión**; no mantiene procesos mientras el equipo está apagado ni garantiza que el sitio esté listo antes del inicio de sesión. El guardián no requiere abrir VS Code y registra actividad en `nexus-guardian.log`.
+El guardián **NEXUS-SiempreActivo** mantiene activa la API y el sitio HTTPS, abre la página local en Chrome y reinicia los servicios si dejan de responder. Los fallos de conexión y de arranque se anotan en `nexus-guardian.log`; un error al atender un servicio no detiene la supervisión del otro. En este computador Windows denegó el registro de una tarea programada formal; por ello quedó instalado `NEXUS-SiempreActivo.lnk` en la carpeta Inicio del usuario. Esto inicia NEXUS automáticamente **después de que ese usuario inicia sesión**; no mantiene procesos mientras el equipo está apagado ni garantiza que el sitio esté listo antes del inicio de sesión. El guardián no requiere abrir VS Code.
 
 Al iniciar sesión, el acceso directo inicia los servicios sin necesidad de VS Code. El código del panel y la base de datos no cambian. Para crear o renovar el certificado local (candado en Chrome) usa `py make_cert.py` con la cuenta de Windows que utiliza Chrome.
 
