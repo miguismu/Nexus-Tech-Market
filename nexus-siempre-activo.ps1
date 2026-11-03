@@ -2,7 +2,7 @@ $ErrorActionPreference = "Stop"
 $root = $PSScriptRoot
 $watchLog = Join-Path $root "nexus-guardian.log"
 $apiUrl = "http://127.0.0.1:5000/api/health"
-$siteUrl = "https://localhost:5500/api/health"
+$siteUrl = "https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5500/api/health"
 $apiStarter = Join-Path $root "iniciar_nexus.py"
 $httpsStarter = Join-Path $root "iniciar-nexus-https.ps1"
 

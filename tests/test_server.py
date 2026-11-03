@@ -3,10 +3,10 @@ import tempfile
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-from server import Base, Product, _catalog_rows, create_app
+from server import ApplicationMetadata, Base, Product, _catalog_rows, create_app
 
 
 class NexusApiTests(unittest.TestCase):
@@ -135,6 +135,49 @@ class NexusApiTests(unittest.TestCase):
             "24d00bc1-5aac-48ad-bed8-398cbebaefa4.jpg?n=XSS_Sharing_200x200.jpg",
         )
 
+    def test_surface_go_1_uses_real_product_photo_and_labeled_used_price_reference(self):
+        surface = next(
+            row for row in _catalog_rows()
+            if row["id"] == "microsoft-surface-go-windows-tablet"
+        )
+        self.assertEqual(surface["image_url"], "images/surface-go-1.jpg")
+        self.assertEqual(surface["price"], 750000)
+        self.assertEqual(surface["checked_on"], "2026-11-03")
+        self.assertIn("no una oferta confirmada", surface["description"])
+        self.assertIn("Wikimedia Commons (CC0)", surface["seller"])
+
+        image_path = Path(__file__).resolve().parents[1] / surface["image_url"]
+        with image_path.open("rb") as image_file:
+            self.assertEqual(image_file.read(3), b"\xff\xd8\xff")
+        image = self.client.get(f"/{surface['image_url']}")
+        self.assertEqual(image.status_code, 200)
+        self.assertEqual(image.mimetype, "image/jpeg")
+        image.close()
+
+    def test_samsung_galaxy_a55_is_restored_with_its_own_product_image(self):
+        xbox_and_a55 = {row["id"]: row for row in _catalog_rows()}
+        a55 = xbox_and_a55["samsung-galaxy-a55"]
+        self.assertEqual(a55["name"], "Samsung Galaxy A55 5G · 256 GB")
+        self.assertIn("Super AMOLED", a55["description"])
+        self.assertGreater(a55["price"], 0)
+        self.assertEqual(a55["image_url"], "images/samsung-galaxy-a55.svg")
+        image = self.client.get(f"/{a55['image_url']}")
+        self.assertEqual(image.status_code, 200)
+        self.assertEqual(image.mimetype, "image/svg+xml")
+        image.close()
+
+    def test_database_contains_application_purpose_and_contents(self):
+        with self.app.extensions["nexus_session_factory"]() as db:
+            metadata = {
+                row.metadata_key: row.value
+                for row in db.scalars(select(ApplicationMetadata)).all()
+            }
+        self.assertEqual(metadata["name"], "NEXUS Tech Market")
+        self.assertIn("solicitudes", metadata["purpose"])
+        self.assertIn("purchase_requests", metadata["database_contents"])
+        self.assertIn("asistente de voz", metadata["features"])
+        self.assertIn("no procesa pagos", metadata["payment_notice"])
+
     def test_catalog_has_no_duplicate_products_and_keeps_requested_additions(self):
         rows = _catalog_rows()
         ids = [row["id"] for row in rows]
@@ -194,6 +237,16 @@ class NexusApiTests(unittest.TestCase):
                     price=1,
                     glyph=catalog_row["glyph"],
                 ))
+                a55 = next(row for row in _catalog_rows() if row["id"] == "samsung-galaxy-a55")
+                db.add(Product(
+                    id=a55["id"],
+                    name="Samsung Galaxy A57 5G · 256 GB",
+                    category=a55["category"],
+                    tag=a55["tag"],
+                    description="Datos antiguos del Galaxy A57.",
+                    price=2499900,
+                    glyph=a55["glyph"],
+                ))
                 db.commit()
             engine.dispose()
 
@@ -206,6 +259,10 @@ class NexusApiTests(unittest.TestCase):
                 products = app.test_client().get("/api/products").get_json()["products"]
                 refreshed = next(item for item in products if item["id"] == catalog_row["id"])
                 self.assertEqual(refreshed["price"], catalog_row["price"])
+                with app.extensions["nexus_session_factory"]() as db:
+                    restored = db.get(Product, "samsung-galaxy-a55")
+                    self.assertEqual(restored.name, a55["name"])
+                    self.assertEqual(restored.price, a55["price"])
             finally:
                 app.extensions["nexus_engine"].dispose()
 

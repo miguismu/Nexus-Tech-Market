@@ -19,7 +19,7 @@ Tienda académica de hardware y tecnología con frontend en HTML, CSS y JavaScri
 - `schema.sql`: esquema SQL para PostgreSQL.
 - `tests/test_server.py`: pruebas automatizadas del flujo principal de la API.
 
-El catálogo contiene productos sin fichas duplicadas. Sus precios e imágenes son referencias: cambian según tienda, variante, inventario y fecha de consulta. Las fichas de cotización generan un archivo descargable con código de referencia; al registrar una solicitud, la página genera una constancia de simulación. Ninguno de esos documentos es recibo fiscal, comprobante de pago ni confirmación de compra.
+El catálogo contiene productos sin fichas duplicadas, incluido el Galaxy A55 restaurado. Sus precios e imágenes son referencias: cambian según tienda, variante, inventario y fecha de consulta. El Galaxy A55 usa una ilustración propia y un precio académico orientativo, no una cotización vigente. Las fichas de cotización generan un archivo descargable con código de referencia; al registrar una solicitud, la página genera una constancia de simulación. Ninguno de esos documentos es recibo fiscal, comprobante de pago ni confirmación de compra.
 
 ## Ejecutarlo en Visual Studio Code
 
@@ -34,7 +34,7 @@ El catálogo contiene productos sin fichas duplicadas. Sus precios e imágenes s
    dotnet run --no-launch-profile --project .\secure-host\NexusHttpsHost.csproj
    ```
 
-   `iniciar_nexus.py` mantiene la API local activa, guarda el código administrativo en `.admin-code` y conserva la clave de firma de sesión en `.session-secret`. No compartas esos archivos ni el código del panel.
+   `iniciar_nexus.py` mantiene la API local activa, sincroniza el catálogo y la ficha descriptiva `application_metadata` en la base de datos, guarda el código administrativo en `.admin-code` y conserva la clave de firma de sesión en `.session-secret`. No compartas esos archivos ni el código del panel.
 3. La dirección de desarrollo con el nombre NEXUS es **<https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5500/>**. El subdominio usa DNS de sslip.io para apuntar a `127.0.0.1` en este equipo; no publica el sitio en Internet ni es un dominio propio. La base SQLite `nexus.db` conserva productos y solicitudes; la API solo escucha en el equipo local.
 4. Para usar **Open with Live Server**, abre `index.html` y pulsa **Open with Live Server**. La dirección será **<https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5501/>**; VS Code está configurado para servir desde la raíz, usar HTTPS y abrir Chrome con ese nombre. El puerto `5501` evita conflicto con el host HTTPS de la API en `5500`. La URL `https://localhost:5500/` sigue disponible como alternativa local.
 5. Para abrir el panel de administración desde “Nuestra visión”, usa la pestaña **Administrador**. Para misión y visión, usa el enlace correspondiente de la navegación.
@@ -57,7 +57,7 @@ Las tablas se crean al arrancar mediante SQLAlchemy; `schema.sql` documenta el e
 - El servidor calcula el precio usando el catálogo de la base de datos; el navegador no puede decidir el total final.
 - Las solicitudes usan validación, límite de tamaño, token CSRF, comparación constante del código administrativo, cookies `HttpOnly`/`SameSite`, sesión con expiración y cabeceras HTTP de seguridad.
 - El código administrativo de desarrollo se genera al arrancar y se informa solo en la terminal local. Puedes fijarlo con la variable `NEXUS_ADMIN_CODE`.
-- En `localhost` **no hay un candado HTTPS real**. El backend admite marcar cookies como `Secure` con `NEXUS_HTTPS=true` solamente cuando se despliegue detrás de HTTPS; no actives esa opción para el HTTP local.
+- El dominio de desarrollo `miguismu-nexus-tech-market.127.0.0.1.sslip.io` sirve HTTPS con un certificado confiado en el almacén del usuario actual de Windows, por lo que Chrome puede mostrar el candado en este equipo. Es un alias local que apunta a `127.0.0.1`, no un dominio público ni un certificado apto para otros dispositivos.
 - Esta demo no procesa pagos, no envía correos y no crea órdenes en comercios externos. El panel únicamente registra una aprobación o un rechazo local.
 - Los precios del catálogo son cotizaciones de referencia observadas en las fuentes enlazadas y llevan fecha; no son garantía de precio o inventario actual. Confirma modelo, variante, impuestos, disponibilidad y derechos de uso directamente con la tienda antes de comprar.
 - Las descargas de cotización y constancia son documentos HTML generados localmente para esta simulación. La constancia se crea al enviar una solicitud pendiente; no representa un pago real.
@@ -91,9 +91,9 @@ Para registrar e iniciar la tarea automática de Windows, ejecuta una vez desde 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\registrar-tarea.ps1
 ```
 
-La tarea **NEXUS-SiempreActivo** se ejecuta al iniciar sesión, mantiene activa la API y el sitio HTTPS, abre la página local en Chrome y reinicia ambos servicios si dejan de responder. Si Windows deniega el registro de la tarea por permisos, el script instala el acceso directo `NEXUS-SiempreActivo.lnk` en la carpeta de inicio del usuario, con el mismo comportamiento. Al apagar Windows los procesos se detienen; al volver a iniciar sesión se arrancan de nuevo. El guardián no requiere iniciar VS Code y registra actividad en `nexus-guardian.log`.
+El guardián **NEXUS-SiempreActivo** mantiene activa la API y el sitio HTTPS, abre la página local en Chrome y reinicia los servicios si dejan de responder. En este computador Windows denegó el registro de una tarea programada formal; por ello quedó instalado `NEXUS-SiempreActivo.lnk` en la carpeta Inicio del usuario. Esto inicia NEXUS automáticamente **después de que ese usuario inicia sesión**; no mantiene procesos mientras el equipo está apagado ni garantiza que el sitio esté listo antes del inicio de sesión. El guardián no requiere abrir VS Code y registra actividad en `nexus-guardian.log`.
 
-Si el equipo se reinicia, vuelve a ejecutar `py iniciar_nexus.py`. El código del panel y la base de datos no cambian. Para crear el certificado local (candado en Chrome) usa `py make_cert.py` una sola vez.
+Al iniciar sesión, el acceso directo inicia los servicios sin necesidad de VS Code. El código del panel y la base de datos no cambian. Para crear o renovar el certificado local (candado en Chrome) usa `py make_cert.py` con la cuenta de Windows que utiliza Chrome.
 
 **Dirección local de demostración:** <https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5501/>. El nombre con `127.0.0.1` es solo un alias local para desarrollo; la dirección `.git` de GitHub es el repositorio de código y no ejecuta la aplicación. Para publicar NEXUS para otras personas hacen falta alojamiento para Flask, una base de datos accesible y un dominio público con certificado HTTPS.
 
@@ -120,8 +120,8 @@ Si el equipo se reinicia, vuelve a ejecutar `py iniciar_nexus.py`. El código de
 2. **Solución:** recorrer el catálogo, filtrar productos, agregarlos al carrito y crear una solicitud simulada.
 3. **Frontend:** explicar HTML semántico y las dos páginas; CSS adaptable con tema oscuro; JavaScript para búsqueda, filtros, carrito, formulario y asistente.
 4. **Backend:** mostrar `server.py`, `/api/products`, `/api/orders` y el panel de revisión. Explicar que el servidor valida la solicitud y calcula el valor desde el catálogo; luego una persona aprueba o rechaza y deja un motivo.
-5. **Base de datos:** enseñar `schema.sql` y las tablas `products`, `purchase_requests` y `purchase_items`; SQLite permite empezar sin instalaciones y PostgreSQL es una alternativa de configuración.
-6. **Seguridad:** mostrar token CSRF, validación, sesión protegida y código temporal de revisión. Aclarar que un candado auténtico requiere HTTPS en un servidor desplegado.
+5. **Base de datos:** enseñar `schema.sql` y las tablas `application_metadata`, `products`, `purchase_requests` y `purchase_items`; SQLite permite empezar sin instalaciones y PostgreSQL es una alternativa de configuración.
+6. **Seguridad:** mostrar token CSRF, validación, sesión protegida y código de revisión. Aclarar que el candado local se limita a este computador; publicar en Internet requiere un dominio propio y TLS público.
 7. **Demostración:** iniciar Flask, abrir la página, descargar una cotización, crear una solicitud simulada y, en el panel, ingresar el código temporal de terminal para aprobarla o rechazarla. Probar el dictado/lectura de voz si el navegador lo permite.
 8. **Alcance y mejoras:** enfatizar que no hay cobros, que precios e ilustraciones son demostrativos y que para comercializarlo harían falta cotizaciones verificadas, imágenes con licencia y controles de producción.
 

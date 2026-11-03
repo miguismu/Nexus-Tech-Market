@@ -143,6 +143,19 @@
         "checked_on":  "2026-10-29"
     },
     {
+        "id":  "samsung-galaxy-a55",
+        "name":  "Samsung Galaxy A55 5G · 256 GB",
+        "category":  "Celulares",
+        "tag":  "SAMSUNG · 5G",
+        "description":  "Smartphone 5G con pantalla Super AMOLED de 6,6 pulgadas y 120 Hz, cámara principal de 50 MP con OIS, 8 GB de RAM y 256 GB de almacenamiento. Ilustración propia; precio académico orientativo, no cotización vigente.",
+        "price":  1699900,
+        "glyph":  "▯",
+        "image_url":  "images/samsung-galaxy-a55.svg",
+        "product_url":  "https://listado.mercadolibre.com.co/samsung-galaxy-a55-5g-256gb",
+        "seller":  "Mercado Libre Colombia · búsqueda de referencia; verifica modelo, vendedor, estado y precio",
+        "checked_on":  ""
+    },
+    {
         "id":  "msi-b550m-motherboard",
         "name":  "MSI B550M PRO-VDH WIFI",
         "category":  "Componentes",
@@ -459,13 +472,13 @@
         "name":  "Microsoft Surface Go 1 · Windows 10 tablet",
         "category":  "Tabletas Windows",
         "tag":  "MICROSOFT · TABLET 2 EN 1",
-        "description":  "Tablet 2 en 1 de 10\" con Windows 10 Home en modo S, Pentium Gold, 4 GB RAM y 64 GB; ideal para estudio ligero con teclado Type Cover opcional.",
-        "price":  1099000,
+        "description":  "Surface Go de primera generación, pantalla de 10\" (3:2), Pentium Gold 4415Y, 4 GB RAM y 64 GB, Windows 10 Home en modo S; teclado Type Cover opcional. COP 750.000 es una referencia de segunda mano consultada el 03/11/2026, no una oferta confirmada de esta unidad.",
+        "price":  750000,
         "glyph":  "▤",
-        "image_url":  "images/surface-go-1.svg",
-        "product_url":  "https://www.mercadolibre.com.co/microsoft-surface-go",
-        "seller":  "Mercado Libre Colombia · referencia usada/coleccion; confirmar estado, vendedor, precio y disponibilidad",
-        "checked_on":  "2026-10-29"
+        "image_url":  "images/surface-go-1.jpg",
+        "product_url":  "https://listado.mercadolibre.com.co/microsoft-surface-go",
+        "seller":  "Estimación de mercado colombiano para Surface Go de 64 GB; confirma generación, RAM, estado, accesorios y precio con el vendedor. Foto real de 2018: Munzimus_Octavius / Wikimedia Commons (CC0).",
+        "checked_on":  "2026-11-03"
     },
     {
         "id":  "asus-rog-phone-8-pro",

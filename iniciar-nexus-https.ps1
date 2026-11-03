@@ -21,7 +21,7 @@ finally {
 }
 
 if ($listener) {
-    Write-Output "Now listening on: https://localhost:5500"
+    Write-Output "Now listening on: https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5500"
     exit 0
 }
 

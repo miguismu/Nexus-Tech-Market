@@ -35,6 +35,31 @@ ALLOWED_ORIGINS = {
     f"{LOCAL_SITE_ORIGIN}:5501",
 }
 PRODUCT_FIELDS = ("id", "name", "category", "tag", "description", "price", "glyph")
+APPLICATION_METADATA = {
+    "name": "NEXUS Tech Market",
+    "description": (
+        "Aplicación web académica de catálogo y simulación de solicitudes de compra "
+        "de productos tecnológicos."
+    ),
+    "purpose": (
+        "Permitir explorar equipos tecnológicos, consultar fichas y precios de referencia, "
+        "armar un carrito y practicar el registro y revisión administrativa de solicitudes."
+    ),
+    "features": (
+        "Catálogo por categorías, búsqueda, fichas de productos, carrito, solicitudes simuladas, "
+        "códigos de consulta, panel administrativo, asistente de voz y páginas de visión."
+    ),
+    "database_contents": (
+        "products: catálogo estructurado y precios de referencia; purchase_requests: solicitudes "
+        "simuladas y datos de contacto ingresados; purchase_items: productos y cantidades por "
+        "solicitud; application_metadata: descripción, propósito, funciones y límites del sistema. "
+        "Las imágenes, vendedores y URL de producto complementarias se mantienen en catalog.json."
+    ),
+    "payment_notice": (
+        "La aplicación no procesa pagos, no envía pedidos a comercios y no confirma compras; "
+        "solo registra una simulación local."
+    ),
+}
 
 
 class Base(DeclarativeBase):
@@ -51,6 +76,13 @@ class Product(Base):
     description: Mapped[str] = mapped_column(String(240), nullable=False)
     price: Mapped[int] = mapped_column(Integer, nullable=False)
     glyph: Mapped[str] = mapped_column(String(12), nullable=False)
+
+
+class ApplicationMetadata(Base):
+    __tablename__ = "application_metadata"
+
+    metadata_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    value: Mapped[str] = mapped_column(Text, nullable=False)
 
 
 class PurchaseRequest(Base):
@@ -137,6 +169,12 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 continue
             for field in PRODUCT_FIELDS[1:]:
                 setattr(product, field, row[field])
+        for key, value in APPLICATION_METADATA.items():
+            metadata = db.get(ApplicationMetadata, key)
+            if metadata is None:
+                db.add(ApplicationMetadata(metadata_key=key, value=value))
+            else:
+                metadata.value = value
         db.commit()
 
     if not os.environ.get("NEXUS_ADMIN_CODE") and not app.config.get("TESTING"):
