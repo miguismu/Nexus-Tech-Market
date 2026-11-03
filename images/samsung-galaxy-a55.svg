@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-labelledby="title description">
+  <title id="title">Ilustración del Samsung Galaxy A55 5G</title>
+  <desc id="description">Teléfono azul oscuro visto por detrás, con tres cámaras y flash.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6f1ff"/>
+      <stop offset="1" stop-color="#e3eaf7"/>
+    </linearGradient>
+    <linearGradient id="phone" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a8bdc6"/>
+      <stop offset=".48" stop-color="#526a7a"/>
+      <stop offset="1" stop-color="#293b50"/>
+    </linearGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#314354"/>
+      <stop offset=".5" stop-color="#c5d0d5"/>
+      <stop offset="1" stop-color="#40566a"/>
+    </linearGradient>
+    <filter id="shadow" x="-.4" y="-.2" width="1.8" height="1.6">
+      <feGaussianBlur stdDeviation="20"/>
+    </filter>
+  </defs>
+  <rect width="800" height="800" rx="56" fill="url(#background)"/>
+  <circle cx="640" cy="166" r="115" fill="#ffffff" opacity=".34"/>
+  <ellipse cx="402" cy="670" rx="195" ry="37" fill="#23334c" opacity=".18" filter="url(#shadow)"/>
+  <g transform="rotate(-8 400 400)">
+    <rect x="239" y="111" width="330" height="573" rx="54" fill="url(#edge)" stroke="#21334a" stroke-width="8"/>
+    <rect x="249" y="122" width="310" height="550" rx="45" fill="url(#phone)"/>
+    <path d="M253 171q0-44 44-44h183q-127 90-231 240z" fill="#ffffff" opacity=".12"/>
+    <g fill="#172533" stroke="#c5d0d5" stroke-width="5">
+      <circle cx="305" cy="196" r="34"/>
+      <circle cx="305" cy="281" r="34"/>
+      <circle cx="305" cy="366" r="34"/>
+    </g>
+    <g fill="#0c1723">
+      <circle cx="305" cy="196" r="23"/>
+      <circle cx="305" cy="281" r="23"/>
+      <circle cx="305" cy="366" r="23"/>
+    </g>
+    <g fill="#88a5b6" opacity=".75">
+      <circle cx="298" cy="189" r="7"/>
+      <circle cx="298" cy="274" r="7"/>
+      <circle cx="298" cy="359" r="7"/>
+    </g>
+    <circle cx="381" cy="198" r="13" fill="#f3edc8"/>
+    <text x="407" y="472" text-anchor="middle" fill="#e1e9ed" font-family="Arial, sans-serif" font-size="24" letter-spacing="4">SAMSUNG</text>
+    <text x="407" y="505" text-anchor="middle" fill="#d2dde4" font-family="Arial, sans-serif" font-size="14" letter-spacing="2">GALAXY A55 5G</text>
+    <rect x="567" y="235" width="8" height="81" rx="4" fill="#172533"/>
+    <rect x="567" y="333" width="8" height="49" rx="4" fill="#172533"/>
+  </g>
+  <text x="400" y="748" text-anchor="middle" fill="#34445a" font-family="Arial, sans-serif" font-size="19" letter-spacing="3">ILUSTRACIÓN DE PRODUCTO</text>
+</svg>

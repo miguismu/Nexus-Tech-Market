@@ -1,0 +1,15 @@
+{
+    "liveServer.settings.https":  {
+                                      "enable":  true,
+                                      "cert":  "./certs/localhost.crt",
+                                      "key":  "./certs/localhost.key",
+                                      "passphrase":  ""
+                                  },
+    "liveServer.settings.CustomBrowser":  "chrome",
+    "liveServer.settings.NoBrowser": false,
+    "liveServer.settings.port":  5501,
+    "liveServer.settings.root":  "/",
+    "liveServer.settings.file":  "index.html",
+    "liveServer.settings.host":  "miguismu-nexus-tech-market.127.0.0.1.sslip.io",
+    "task.allowAutomaticTasks": "on"
+}

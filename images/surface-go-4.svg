@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 440" role="img" aria-labelledby="title description">
+  <title id="title">Tablet Surface Go 4</title>
+  <desc id="description">Ilustración original de una tablet compacta con soporte y teclado, identificada como Surface Go 4.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#292039"/>
+      <stop offset="1" stop-color="#10121f"/>
+    </linearGradient>
+    <linearGradient id="screen" x1="0" x2="1" y1="1" y2="0">
+      <stop stop-color="#31597d"/>
+      <stop offset=".52" stop-color="#477ba1"/>
+      <stop offset="1" stop-color="#ba9b69"/>
+    </linearGradient>
+    <linearGradient id="keyboard" x1="0" x2="0" y1="0" y2="1">
+      <stop stop-color="#45414a"/>
+      <stop offset="1" stop-color="#25232b"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="440" rx="28" fill="url(#background)"/>
+  <circle cx="504" cy="100" r="96" fill="#b79a6820"/>
+  <ellipse cx="314" cy="367" rx="221" ry="25" fill="#080810" opacity=".62"/>
+  <path d="m370 181 127 151H365l-45-83z" fill="#aaa5a4" stroke="#dad5cf" stroke-width="5"/>
+  <rect x="144" y="52" width="270" height="306" rx="21" fill="#c6c3bd" stroke="#e6e3dd" stroke-width="5" transform="rotate(-5 279 205)"/>
+  <rect x="157" y="65" width="244" height="276" rx="11" fill="#090d16" transform="rotate(-5 279 203)"/>
+  <rect x="165" y="74" width="228" height="258" rx="6" fill="url(#screen)" transform="rotate(-5 279 203)"/>
+  <path d="M177 285c53-113 116-153 201-176v173z" fill="#ecce8d" opacity=".78" transform="rotate(-5 279 203)"/>
+  <path d="M178 293c62-74 130-97 201-103v103z" fill="#746795" opacity=".9" transform="rotate(-5 279 203)"/>
+  <circle cx="283" cy="351" r="4" fill="#e1ddd6"/>
+  <path d="M220 345 476 321l33 43-265 25z" fill="url(#keyboard)" stroke="#77717a" stroke-width="3"/>
+  <path d="m249 353 205-19 20 24-205 20z" fill="#15141c" stroke="#77717a" stroke-width="2"/>
+  <path d="m287 359 105-10 5 7-105 10z" fill="#55505b"/>
+  <rect x="428" y="294" width="120" height="36" rx="18" fill="#f3e8d0"/>
+  <text x="488" y="318" fill="#352a25" font-family="Arial,sans-serif" font-size="17" font-weight="700" text-anchor="middle">GO 4 · 8/128 GB</text>
+</svg>

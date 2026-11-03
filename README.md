@@ -24,7 +24,7 @@ El catálogo contiene productos sin fichas duplicadas, incluido el Galaxy A55 re
 ## Ejecutarlo en Visual Studio Code
 
 1. Abre esta carpeta en VS Code y autoriza las tareas automáticas cuando se solicite.
-2. Al abrir el proyecto, la tarea **NEXUS: abrir sitio seguro en Chrome** inicia la API y el host HTTPS y abre `https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5500/` en Chrome. Para iniciar todo manualmente, instala dependencias y ejecuta:
+2. Al abrir el proyecto, las tareas automáticas intentan iniciar la API local y el host HTTPS. Para iniciar todo manualmente, instala dependencias y ejecuta:
 
    ```powershell
    py -m venv .venv
@@ -36,7 +36,7 @@ El catálogo contiene productos sin fichas duplicadas, incluido el Galaxy A55 re
 
    `iniciar_nexus.py` mantiene la API local activa, sincroniza el catálogo y la ficha descriptiva `application_metadata` en la base de datos, guarda el código administrativo en `.admin-code` y conserva la clave de firma de sesión en `.session-secret`. No compartas esos archivos ni el código del panel.
 3. La dirección de desarrollo con el nombre NEXUS es **<https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5500/>**. El subdominio usa DNS de sslip.io para apuntar a `127.0.0.1` en este equipo; no publica el sitio en Internet ni es un dominio propio. La base SQLite `nexus.db` conserva productos y solicitudes; la API solo escucha en el equipo local.
-4. Para usar **Open with Live Server**, abre `index.html` y pulsa **Open with Live Server**. La dirección será **<https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5501/>**; VS Code está configurado para servir desde la raíz, usar HTTPS y abrir Chrome con ese nombre. El puerto `5501` evita conflicto con el host HTTPS de la API en `5500`. La URL `https://localhost:5500/` sigue disponible como alternativa local.
+4. Para usar **Open with Live Server**, abre `index.html` y pulsa **Open with Live Server** en VS Code. La dirección será **<https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5501/>**; Live Server usa HTTPS y abre Chrome con ese nombre. El puerto `5501` evita conflicto con el host HTTPS de la API en `5500`. La URL `https://localhost:5500/` sigue disponible como alternativa local.
 5. Para abrir el panel de administración desde “Nuestra visión”, usa la pestaña **Administrador**. Para misión y visión, usa el enlace correspondiente de la navegación.
 
 La comprobación local de la API está en `http://127.0.0.1:5000/api/health` (solo loopback). En otro equipo, configura primero Python, sus dependencias, el SDK de .NET y el certificado local.
@@ -99,9 +99,9 @@ Para que NEXUS siga activo al cerrar sesión, registra la tarea como SYSTEM desd
   -StartupDirectory ([Environment]::GetFolderPath('Startup'))
 ```
 
-La tarea se ejecuta al iniciar Windows, reanuda los servicios aun sin sesión interactiva y escribe los errores en `nexus-guardian.log`. La instalación necesita el Python y `site-packages` de la cuenta del proyecto; guarda sus rutas locales en `.nexus-python-exe` y `.nexus-python-site` (excluidas de Git). La tarea SYSTEM ejecuta los scripts del proyecto con privilegios del sistema: protege la carpeta del proyecto para que otros usuarios no puedan modificarla y ejecuta el registro elevado solo después de revisar los cambios. Un acceso directo separado abre Chrome después de iniciar sesión. Esto no mantiene la web disponible mientras el computador está apagado. Si no se aprueba UAC o el Programador de tareas rechaza el registro, la tarea no se considera instalada.
+La tarea se ejecuta al iniciar Windows, reanuda los servicios aun sin sesión interactiva y escribe los errores en `nexus-guardian.log`. La instalación necesita el Python y `site-packages` de la cuenta del proyecto; guarda sus rutas locales en `.nexus-python-exe` y `.nexus-python-site` (excluidas de Git). La tarea SYSTEM ejecuta scripts del proyecto con privilegios del sistema. Antes de instalarla, protege la carpeta del proyecto contra modificaciones de otros usuarios; el script de registro no configura permisos ACL. Ejecuta el registro elevado solo después de revisar los cambios. El acceso directo `NEXUS-VSCode.lnk` abre este proyecto al iniciar sesión. Esto no mantiene la web disponible mientras el computador está apagado. Si no se aprueba UAC o el Programador de tareas rechaza el registro, la tarea no se considera instalada.
 
-La tarea y el acceso directo inician NEXUS sin necesidad de VS Code. **Open with Live Server** usa el puerto `5501` y requiere que VS Code y su extensión estén abiertos; el host HTTPS de NEXUS en el puerto `5500` es el que permanece activo sin Live Server y conserva el proxy de la API. El código del panel y la base de datos no cambian. Para crear o renovar el certificado local (candado en Chrome) usa `py make_cert.py` con la cuenta de Windows que utiliza Chrome.
+La tarea de Windows mantiene NEXUS disponible sin depender de VS Code. El acceso directo `NEXUS-VSCode.lnk` abre este proyecto al iniciar sesión. **Open with Live Server** usa el puerto `5501` y requiere que VS Code y su extensión estén abiertos; inícialo manualmente desde VS Code. El host HTTPS de NEXUS en el puerto `5500` permanece activo sin Live Server y conserva el proxy de la API. El código del panel y la base de datos no cambian. Para crear o renovar el certificado local (candado en Chrome) usa `py make_cert.py` con la cuenta de Windows que utiliza Chrome.
 
 **Dirección local de demostración:** <https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5501/>. El nombre con `127.0.0.1` es solo un alias local para desarrollo; la dirección `.git` de GitHub es el repositorio de código y no ejecuta la aplicación. Para publicar NEXUS para otras personas hacen falta alojamiento para Flask, una base de datos accesible y un dominio público con certificado HTTPS.
 
@@ -137,7 +137,7 @@ La tarea y el acceso directo inician NEXUS sin necesidad de VS Code. **Open with
 
 ## Ejecutar con HTTPS local y candado
 
-El certificado local está configurado en `.vscode/settings.json` para Live Server y en el host HTTPS. La tarea automática y **Open with Live Server** abren el nombre local `miguismu-nexus-tech-market.127.0.0.1.sslip.io` en Chrome. Live Server usa el puerto `5501`; el host seguro de la API usa `5500`. Ambos puertos enrutan a `127.0.0.1`, y el catálogo, carrito y asistente conservan las llamadas HTTPS.
+El certificado local está configurado en `.vscode/settings.json` para Live Server y en el host HTTPS. **Open with Live Server** abre el nombre local `miguismu-nexus-tech-market.127.0.0.1.sslip.io` en Chrome cuando se inicia manualmente desde VS Code. Live Server usa el puerto `5501`; el host seguro de la API usa `5500`. Ambos puertos enrutan a `127.0.0.1`, y el catálogo, carrito y asistente conservan las llamadas HTTPS.
 
 Ejecuta `py make_cert.py` desde la cuenta de Windows que usa Chrome para crear y confiar un certificado que cubra `localhost` y el dominio local de NEXUS. Reinicia los servidores después. El certificado y el alias sirven para desarrollo en este equipo; publicar el sitio requiere un dominio propio y un certificado TLS público válido.
 

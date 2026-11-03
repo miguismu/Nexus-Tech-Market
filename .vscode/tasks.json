@@ -1,0 +1,106 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "NEXUS: iniciar API local",
+      "type": "process",
+      "command": "py",
+      "args": [
+        "-X",
+        "utf8",
+        "${workspaceFolder}\\iniciar_nexus.py"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "NEXUS: iniciar sitio HTTPS local",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\iniciar-nexus-https.ps1"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}",
+        "env": {
+          "DOTNET_CLI_HOME": "${workspaceFolder}\\.dotnet-cli"
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "base": "$msCompile",
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*Compilando.*",
+          "endsPattern": ".*Now listening on: https://miguismu-nexus-tech-market\\.127\\.0\\.0\\.1\\.sslip\\.io:5500.*"
+        }
+      },
+      "runOptions": {
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "NEXUS: iniciar servicios HTTPS locales",
+      "dependsOn": [
+        "NEXUS: iniciar API local",
+        "NEXUS: iniciar sitio HTTPS local"
+      ],
+      "dependsOrder": "sequence",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-Command",
+        "Write-Output 'Servicios locales de NEXUS iniciados.'"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "runOptions": {
+        "runOn": "folderOpen",
+        "instanceLimit": 1
+      }
+    },
+    {
+      "label": "NEXUS: iniciar Live Server",
+      "type": "process",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-Command",
+        "Write-Output 'NEXUS Live Server iniciado.'"
+      ],
+      "runOptions": {
+        "runOn": "folderOpen",
+        "instanceLimit": 1
+      },
+      "presentation": {
+        "reveal": "silent",
+        "panel": "dedicated",
+        "close": true
+      },
+      "options": {
+        "env": {
+          "NEXUS_LIVE_SERVER": "${input:nexusStartLiveServer}"
+        }
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "nexusStartLiveServer",
+      "type": "command",
+      "command": "extension.liveServer.goOnline"
+    }
+  ]
+}

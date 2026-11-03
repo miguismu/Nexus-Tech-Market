@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 440" role="img" aria-labelledby="title description">
+  <title id="title">HP Elite x3 con Desk Dock</title>
+  <desc id="description">Ilustración original de un teléfono empresarial junto a una base de escritorio con cable y puertos.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#2a2037"/>
+      <stop offset="1" stop-color="#11131f"/>
+    </linearGradient>
+    <linearGradient id="phone" x1="0" x2="1" y1="0" y2="1">
+      <stop stop-color="#b3aeb1"/>
+      <stop offset=".55" stop-color="#3d4149"/>
+      <stop offset="1" stop-color="#181a20"/>
+    </linearGradient>
+    <linearGradient id="dock" x1="0" x2="0" y1="0" y2="1">
+      <stop stop-color="#51545b"/>
+      <stop offset="1" stop-color="#24262d"/>
+    </linearGradient>
+  </defs>
+  <rect width="640" height="440" rx="28" fill="url(#background)"/>
+  <circle cx="470" cy="112" r="102" fill="#c69b5520"/>
+  <ellipse cx="322" cy="364" rx="225" ry="23" fill="#07080d" opacity=".68"/>
+  <path d="M205 308c31 40 77 48 126 36 42-11 60-2 86 13" fill="none" stroke="#8e8d95" stroke-width="8" stroke-linecap="round"/>
+  <rect x="384" y="258" width="169" height="79" rx="15" fill="url(#dock)" stroke="#85858b" stroke-width="3"/>
+  <path d="m407 258 25-42h73l27 42z" fill="#676970" stroke="#a3a2a3" stroke-width="4"/>
+  <path d="M423 233h91" stroke="#bab7b4" stroke-width="4" stroke-linecap="round"/>
+  <rect x="409" y="292" width="24" height="12" rx="3" fill="#12151b"/>
+  <rect x="443" y="292" width="37" height="12" rx="3" fill="#12151b"/>
+  <rect x="489" y="292" width="39" height="12" rx="3" fill="#12151b"/>
+  <circle cx="427" cy="319" r="4" fill="#d0af6c"/>
+  <rect x="153" y="54" width="165" height="303" rx="24" fill="url(#phone)" stroke="#dad6d2" stroke-width="5"/>
+  <rect x="164" y="76" width="143" height="258" rx="13" fill="#111622"/>
+  <path d="M176 266c33-65 77-103 119-132v189H176z" fill="#468397"/>
+  <path d="M176 279c40-47 76-71 119-87v131H176z" fill="#b58a54" opacity=".82"/>
+  <path d="M178 157h114M178 174h88" stroke="#e5e3df" stroke-width="4" stroke-linecap="round" opacity=".76"/>
+  <circle cx="236" cy="351" r="4" fill="#e7e3df"/>
+  <rect x="174" y="370" width="390" height="36" rx="18" fill="#f0e2c5"/>
+  <text x="369" y="394" fill="#352b25" font-family="Arial,sans-serif" font-size="16" font-weight="700" text-anchor="middle">ELITE x3 + DESK DOCK · WINDOWS 10</text>
+</svg>

@@ -8,6 +8,8 @@ nexus.db-wal
 .pytest_cache/
 models/
 .dotnet-cli/
+secure-host/bin/
+secure-host/obj/
 .admin-code
 .session-secret
 .nexus-python-exe

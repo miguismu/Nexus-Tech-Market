@@ -92,23 +92,35 @@ if (-not (Test-Path -LiteralPath $startupDirectory)) {
     throw "La carpeta de inicio de sesión no está disponible: $startupDirectory"
 }
 
-$startupShortcut = Join-Path $startupDirectory "NEXUS-Abrir-en-Chrome.lnk"
+$codeCandidates = @(
+    (Join-Path $env:LOCALAPPDATA "Programs\Microsoft VS Code\Code.exe"),
+    (Join-Path $env:ProgramFiles "Microsoft VS Code\Code.exe"),
+    (Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFilesX86)) `
+        "Microsoft VS Code\Code.exe")
+)
+$codePath = $codeCandidates |
+    Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) } |
+    Select-Object -First 1
+if (-not $codePath) {
+    throw "No se encontró VS Code para abrir automáticamente el proyecto."
+}
+
+$startupShortcut = Join-Path $startupDirectory "NEXUS-VSCode.lnk"
 $shell = New-Object -ComObject WScript.Shell
 $shortcut = $shell.CreateShortcut($startupShortcut)
-$shortcut.TargetPath = Join-Path $PSHOME "powershell.exe"
-$shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PSScriptRoot\abrir-nexus-chrome.ps1`""
+$shortcut.TargetPath = $codePath
+$shortcut.Arguments = "--new-window `"$PSScriptRoot`""
 $shortcut.WorkingDirectory = $PSScriptRoot
-$shortcut.WindowStyle = 7
+$shortcut.WindowStyle = 1
 $shortcut.Save()
 
+$legacyChromeShortcut = Join-Path $startupDirectory "NEXUS-Abrir-en-Chrome.lnk"
+if (Test-Path -LiteralPath $legacyChromeShortcut) {
+    Remove-Item -LiteralPath $legacyChromeShortcut
+}
 $guardianStartupShortcut = Join-Path $startupDirectory "NEXUS-SiempreActivo.lnk"
-if (-not $RunAtSystemStartup) {
-    $guardianShortcut = $shell.CreateShortcut($guardianStartupShortcut)
-    $guardianShortcut.TargetPath = Join-Path $PSHOME "powershell.exe"
-    $guardianShortcut.Arguments = $action.Arguments
-    $guardianShortcut.WorkingDirectory = $PSScriptRoot
-    $guardianShortcut.WindowStyle = 7
-    $guardianShortcut.Save()
+if (Test-Path -LiteralPath $guardianStartupShortcut) {
+    Remove-Item -LiteralPath $guardianStartupShortcut
 }
 
 try {
@@ -185,4 +197,4 @@ Write-Output "Modo de inicio registrado: $logonMode"
 if ($logonMode -eq "Interactive") {
     Write-Warning "La persistencia después de cerrar sesión requiere que un administrador habilite el inicio S4U para esta cuenta."
 }
-Write-Output "Acceso directo de Chrome al iniciar sesión: $startupShortcut"
+Write-Output "Acceso directo de VS Code al iniciar sesión: $startupShortcut"
