@@ -91,7 +91,15 @@ Para registrar e iniciar la tarea automática de Windows, ejecuta una vez desde 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\registrar-tarea.ps1
 ```
 
-La tarea **NEXUS-SiempreActivo** usa el inicio de sesión desatendido de Windows (S4U) para mantener la API y el host HTTPS en segundo plano incluso cuando se cierra la sesión. Si Windows no permite crear la tarea, el registro termina con error; quedan accesos directos de inicio para mantener NEXUS durante la sesión abierta y abrir Chrome, pero esos accesos no sobreviven al cierre de sesión. Los fallos de conexión y de arranque se anotan en `nexus-guardian.log`; un error al atender un servicio no detiene la supervisión del otro. Cuando S4U sí queda registrado, la tarea inicia al iniciar sesión y continúa tras cerrarla; no puede abrir Chrome en una sesión cerrada ni mantener la web disponible mientras el computador está apagado.
+Para que NEXUS siga activo al cerrar sesión, registra la tarea como SYSTEM desde una consola PowerShell elevada:
+
+```powershell
+.\registrar-tarea.ps1 -RunAtSystemStartup `
+  -TaskUser "$env:USERDOMAIN\$env:USERNAME" `
+  -StartupDirectory ([Environment]::GetFolderPath('Startup'))
+```
+
+La tarea se ejecuta al iniciar Windows, reanuda los servicios aun sin sesión interactiva y escribe los errores en `nexus-guardian.log`. La instalación necesita el Python y `site-packages` de la cuenta del proyecto; guarda sus rutas locales en `.nexus-python-exe` y `.nexus-python-site` (excluidas de Git). La tarea SYSTEM ejecuta los scripts del proyecto con privilegios del sistema: protege la carpeta del proyecto para que otros usuarios no puedan modificarla y ejecuta el registro elevado solo después de revisar los cambios. Un acceso directo separado abre Chrome después de iniciar sesión. Esto no mantiene la web disponible mientras el computador está apagado. Si no se aprueba UAC o el Programador de tareas rechaza el registro, la tarea no se considera instalada.
 
 La tarea y el acceso directo inician NEXUS sin necesidad de VS Code. **Open with Live Server** usa el puerto `5501` y requiere que VS Code y su extensión estén abiertos; el host HTTPS de NEXUS en el puerto `5500` es el que permanece activo sin Live Server y conserva el proxy de la API. El código del panel y la base de datos no cambian. Para crear o renovar el certificado local (candado en Chrome) usa `py make_cert.py` con la cuenta de Windows que utiliza Chrome.
 
