@@ -1,3 +1,0 @@
-# Dependencias completas + clasificador TensorFlow opcional para el asistente local.
--r requirements.txt
-tensorflow>=2.21,<2.22

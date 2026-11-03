@@ -67,22 +67,7 @@ function Start-SecureSite {
     Write-Log "El sitio HTTPS no respondió ($script:lastEndpointError). Se reintentará en el siguiente ciclo."
 }
 
-function Open-Chrome {
-    if (-not (Test-Endpoint $siteUrl)) {
-        return
-    }
-
-    try {
-        & (Join-Path $root "abrir-nexus-chrome.ps1")
-        Write-Log "NEXUS abierto en Chrome."
-    }
-    catch {
-        Write-Log "No se pudo abrir Chrome: $($_.Exception.Message)"
-    }
-}
-
-Write-Log "Guardian NEXUS iniciado al iniciar sesión."
-$script:chromeOpened = $false
+Write-Log "Guardian NEXUS iniciado en segundo plano para continuar tras cerrar sesión."
 try {
     Start-Api
 }
@@ -95,16 +80,6 @@ try {
 catch {
     Write-Log "Error al iniciar el sitio HTTPS durante el arranque: $($_.Exception.Message)"
 }
-try {
-    if (Test-Endpoint $siteUrl) {
-        Open-Chrome
-        $script:chromeOpened = $true
-    }
-}
-catch {
-    Write-Log "Error al abrir NEXUS en Chrome durante el arranque: $($_.Exception.Message)"
-}
-
 while ($true) {
     try {
         if (-not (Test-Endpoint $apiUrl)) {
@@ -124,16 +99,6 @@ while ($true) {
     }
     catch {
         Write-Log "Error al supervisar o iniciar el sitio HTTPS: $($_.Exception.Message)"
-    }
-
-    if (-not $script:chromeOpened -and (Test-Endpoint $siteUrl)) {
-        try {
-            Open-Chrome
-            $script:chromeOpened = $true
-        }
-        catch {
-            Write-Log "Error al abrir NEXUS en Chrome: $($_.Exception.Message)"
-        }
     }
 
     Start-Sleep -Seconds 60
