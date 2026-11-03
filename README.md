@@ -46,7 +46,7 @@ La comprobación local de la API está en `http://127.0.0.1:5000/api/health` (so
 PostgreSQL no es necesario para la demostración local: SQLite ya guarda solicitudes y decisiones. Para usar PostgreSQL, instala PostgreSQL desde su sitio oficial, crea una base llamada `nexus` y configura `DATABASE_URL` en la terminal antes de iniciar el backend:
 
 ```powershell
-$env:DATABASE_URL = "postgresql+psycopg://usuario:clave@localhost:5432/nexus"
+$env:DATABASE_URL = "postgresql+psycopg://localhost:5432/nexus"
 py server.py
 ```
 
