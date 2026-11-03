@@ -10,10 +10,11 @@ const voiceStatus = document.querySelector("#chat-voice-status");
 const orbStage = document.querySelector("#chat-orb-stage");
 const orbCaption = document.querySelector("#orb-caption");
 const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-let voiceOutputEnabled = false;
+let voiceOutputEnabled = localStorage.getItem("nexus-voice-output-v2") === "true";
 let recognition = null;
 let microphoneEnabled = false;
 let recognitionRunning = false;
+let recognitionStarting = false;
 let responsePending = false;
 let recognitionSubmitted = false;
 let activeUtterance = null;
@@ -35,16 +36,14 @@ function setVoiceOutput(enabled, announce = false) {
   voiceOutputEnabled = enabled;
   localStorage.setItem("nexus-voice-output-v2", String(enabled));
   voiceToggleButton.setAttribute("aria-pressed", String(enabled));
-  voiceToggleButton.setAttribute("aria-label", enabled ? "Desactivar micrófono y respuestas por voz" : "Activar micrófono y respuestas por voz");
-  voiceToggleButton.title = enabled ? "Desactivar micrófono · Español Colombia" : "Activar micrófono y respuestas por voz · Español Colombia";
+  voiceToggleButton.setAttribute("aria-label", enabled ? "Desactivar respuestas por voz" : "Activar respuestas por voz");
+  voiceToggleButton.title = enabled ? "Desactivar respuestas habladas" : "Activar respuestas habladas en español";
   if (!enabled && "speechSynthesis" in window) {
     activeUtterance = null;
     responsePending = false;
     window.speechSynthesis.cancel();
     setOrbState(null);
-    microphoneEnabled = false;
-    voiceInputButton.setAttribute("aria-pressed", "false");
-    stopRecognition();
+    if (microphoneEnabled) resumeRecognition();
   }
   setVoiceStatus(enabled ? "Voz activada: respuestas habladas en español de Colombia." : "Voz desactivada. Activa el micrófono para escuchar las respuestas.");
   if (enabled && announce) {
@@ -57,7 +56,13 @@ function setVoiceOutput(enabled, announce = false) {
 }
 
 function speakResponse(text) {
-  if (!microphoneEnabled || !voiceOutputEnabled || !("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) return;
+  if (!voiceOutputEnabled) return;
+  if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+    setVoiceStatus("Este navegador no tiene disponible la lectura de voz.");
+    responsePending = false;
+    if (microphoneEnabled) resumeRecognition();
+    return;
+  }
   responsePending = true;
   stopRecognition();
   window.speechSynthesis.cancel();
@@ -103,15 +108,16 @@ function speakResponse(text) {
 // Precargar el listado de voces (Chrome lo llena de forma asíncrona).
 if ("speechSynthesis" in window) window.speechSynthesis.getVoices();
 
-voiceToggleButton.addEventListener("click", () => voiceInputButton.click());
+voiceToggleButton.addEventListener("click", () => setVoiceOutput(!voiceOutputEnabled, true));
 setVoiceOutput(voiceOutputEnabled);
 
 if (SpeechRecognition) {
   recognition = new SpeechRecognition();
   recognition.lang = "es-CO";
-  recognition.continuous = true;
+  recognition.continuous = false;
   recognition.interimResults = false;
   recognition.onstart = () => {
+    recognitionStarting = false;
     recognitionRunning = true;
     recognitionSubmitted = false;
     voiceInputButton.setAttribute("aria-pressed", "true");
@@ -128,7 +134,11 @@ if (SpeechRecognition) {
     void submitQuestion(spoken);
   };
   recognition.onerror = (event) => {
-    if (event.error === "not-allowed" || event.error === "service-not-allowed") microphoneEnabled = false;
+    recognitionStarting = false;
+    if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+      microphoneEnabled = false;
+      voiceInputButton.setAttribute("aria-pressed", "false");
+    }
     setOrbState(microphoneEnabled ? "is-listening" : null);
     const messages = {
       "not-allowed": "Chrome bloqueó el micrófono. Permite el acceso en el candado de la barra de direcciones y vuelve a activarlo.",
@@ -140,6 +150,7 @@ if (SpeechRecognition) {
     setVoiceStatus(messages[event.error] || "No pude reconocer esa frase; sigo activo para intentarlo otra vez.");
   };
   recognition.onend = () => {
+    recognitionStarting = false;
     recognitionRunning = false;
     voiceInputButton.setAttribute("aria-pressed", String(microphoneEnabled));
     if (microphoneEnabled && !responsePending && !window.speechSynthesis?.speaking) window.setTimeout(startRecognition, 250);
@@ -149,15 +160,13 @@ if (SpeechRecognition) {
     microphoneEnabled = !microphoneEnabled;
     voiceInputButton.setAttribute("aria-pressed", String(microphoneEnabled));
     voiceInputButton.setAttribute("aria-label", microphoneEnabled ? "Desactivar micrófono" : "Activar micrófono para hablar con NEXUS");
-    voiceToggleButton.setAttribute("aria-pressed", String(microphoneEnabled));
     if (microphoneEnabled) {
-      setVoiceOutput(true);
+      if (!voiceOutputEnabled) setVoiceOutput(true);
       setVoiceStatus("Micrófono activo. Te escucho después del saludo.");
       speakResponse("¿En qué puedo ayudarte hoy?");
-      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) startRecognition();
+      if (!voiceOutputEnabled || !window.speechSynthesis || !window.SpeechSynthesisUtterance) startRecognition();
     } else {
       stopRecognition();
-      setVoiceOutput(false);
       if (window.speechSynthesis?.speaking) window.speechSynthesis.cancel();
       setOrbState(null);
       setVoiceStatus("Micrófono desactivado.");
@@ -170,13 +179,27 @@ if (SpeechRecognition) {
 }
 
 function startRecognition() {
-  if (!recognition || !microphoneEnabled || recognitionRunning || window.speechSynthesis?.speaking) return;
-  try { recognition.start(); } catch { /* El reconocimiento ya está iniciándose; onend lo reintentará si hace falta. */ }
+  if (!recognition || !microphoneEnabled || recognitionRunning || recognitionStarting || window.speechSynthesis?.speaking) return;
+  recognitionStarting = true;
+  try {
+    recognition.start();
+  } catch (error) {
+    recognitionStarting = false;
+    if (error.name !== "InvalidStateError") {
+      setVoiceStatus("No pude iniciar el micrófono. Revisa los permisos de Chrome e inténtalo de nuevo.");
+    }
+  }
 }
 
 function stopRecognition() {
   if (!recognition || !recognitionRunning) return;
-  try { recognition.stop(); } catch { /* Puede haberse detenido entre eventos. */ }
+  try {
+    recognition.stop();
+  } catch (error) {
+    if (error.name !== "InvalidStateError") {
+      setVoiceStatus("No pude detener el micrófono correctamente.");
+    }
+  }
 }
 
 function resumeRecognition() {
@@ -199,24 +222,24 @@ function localReply(message) {
   if (/aprob|rechaz|revisión|revision|estado/.test(text)) return "Las solicitudes quedan pendientes hasta que una persona revisora las apruebe o rechace en el panel.";
   if (/precio|cotiz|cuesta|valor/.test(text)) return "Los valores son referencias de la fecha indicada en cada ficha, no cotizaciones en tiempo real. Consulta la tienda enlazada.";
   if (/catálogo|catalogo|producto|equipo|hardware|tablet|computador|celular/.test(text)) return "Busca por nombre o filtra el catálogo por categoría. Las fichas enlazan a una fuente cuando se dispone de ella.";
-  return `Te escuché decir: «${message.trim()}». Puedo ayudarte con el catálogo, las características y precios de referencia, el carrito, las cotizaciones o las solicitudes de compra. ¿Qué quieres consultar?`;
+  return "Puedo ayudarte con el catálogo, las características y precios de referencia, el carrito, las cotizaciones y las solicitudes de compra. ¿Qué necesitas saber?";
 }
 
 async function answer(message) {
-  const host = window.location.hostname || "127.0.0.1";
+  const apiBase = window.NEXUS_API_URL || `${window.location.origin}/api`;
   try {
-    const apiOrigin = window.location.protocol === "https:" ? `${window.location.protocol}//${host}:5443` : `http://${host}:5000`;
-    const response = await fetch(`${apiOrigin}/api/assistant`, {
+    const response = await fetch(`${apiBase}/assistant`, {
       method: "POST", headers: { "Content-Type": "application/json" },
       credentials: "include", body: JSON.stringify({ message })
     });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "Asistente no disponible");
     const reply = typeof result.answer === "string" ? result.answer.trim() : "";
-    if (!reply || reply.startsWith("Puedo ayudarte con precios, cotizaciones")) return localReply(message);
+    if (!reply) return localReply(message);
     return reply;
-  } catch {
-    return `${localReply(message)} (respuesta local de respaldo; backend no disponible).`;
+  } catch (error) {
+    setVoiceStatus(`El asistente local respondió; API no disponible: ${error.message}`);
+    return localReply(message);
   }
 }
 
@@ -243,6 +266,10 @@ async function submitQuestion(text) {
     setVoiceStatus("Te respondí con la ayuda local. Puedes seguir preguntándome.");
     speakResponse(response);
   } finally {
+    if (!voiceOutputEnabled || !window.speechSynthesis || !window.SpeechSynthesisUtterance) {
+      responsePending = false;
+      if (microphoneEnabled) resumeRecognition();
+    }
     if (!window.speechSynthesis?.speaking && !responsePending) setOrbState(null);
   }
 }

@@ -9,8 +9,10 @@ nexus.db-wal
 models/
 .dotnet-cli/
 .admin-code
+.session-secret
 certs/
 nexus-server.log
+nexus-guardian.log
 qa-*
 diag-*
 nex-check.cjs

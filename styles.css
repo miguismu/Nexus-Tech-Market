@@ -220,6 +220,7 @@ body { background: radial-gradient(ellipse at 48% -20%, rgba(93, 54, 119, .16), 
 .quote-download:hover { color: #ead8a9; }
 .chat-heading { background: linear-gradient(115deg,rgba(76,48,99,.55),rgba(20,13,28,.94)); }
 .chat-avatar { position: relative; isolation: isolate; border: 1px solid rgba(218,185,108,.7); background: radial-gradient(circle at 32% 28%,#f3d98d,#a87bd1 42%,#422650 76%); box-shadow: 0 0 18px rgba(190,152,92,.36),0 0 34px rgba(138,91,179,.26); }
+.chat-avatar svg { width: 21px; height: 21px; fill: none; stroke: #f7e3ab; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .chat-orb-stage { position: relative; display: grid; place-items: center; min-height: 150px; margin: 10px 14px 2px; overflow: hidden; border: 1px solid rgba(185,154,87,.14); border-radius: 14px; background: radial-gradient(ellipse at center,rgba(74,44,98,.34),rgba(12,7,18,.55) 70%); }
 .chat-orb-stage::before { content:""; position:absolute; inset:-40%; background: radial-gradient(circle at 50% 55%, rgba(140,90,180,.16), transparent 55%); animation: nexus-stage-drift 16s ease-in-out infinite alternate; }
 @keyframes nexus-stage-drift { from { transform: translate(-4%,-2%) scale(1); } to { transform: translate(4%,3%) scale(1.12); } }

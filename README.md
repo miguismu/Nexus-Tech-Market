@@ -23,27 +23,23 @@ El catálogo contiene productos sin fichas duplicadas. Sus precios e imágenes s
 
 ## Ejecutarlo en Visual Studio Code
 
-1. Abre esta carpeta en VS Code.
-2. En la terminal integrada crea y activa un entorno virtual:
+1. Abre esta carpeta en VS Code y autoriza las tareas automáticas cuando se solicite.
+2. Al abrir el proyecto, la tarea **NEXUS: abrir sitio seguro en Chrome** inicia la API y el host HTTPS y abre `https://localhost:5500/` en Chrome. Para iniciar todo manualmente, instala dependencias y ejecuta:
 
    ```powershell
    py -m venv .venv
    .\.venv\Scripts\Activate.ps1
    py -m pip install -r requirements.txt
+   py iniciar_nexus.py
+   dotnet run --no-launch-profile --project .\secure-host\NexusHttpsHost.csproj
    ```
 
-3. Inicia la API en una terminal y conserva abierta la ventana:
+   `iniciar_nexus.py` mantiene la API local activa, guarda el código administrativo en `.admin-code` y conserva la clave de firma de sesión en `.session-secret`. No compartas esos archivos ni el código del panel.
+3. La dirección local segura es **<https://localhost:5500/>**. La base SQLite `nexus.db` conserva productos y solicitudes; la API solo escucha en el equipo local.
+4. Si prefieres usar **Live Server**, el puerto `5501` está reservado para evitar conflicto con el host HTTPS. Live Server está configurado para abrir Chrome; sus solicitudes a la API pasan por el host seguro de `https://localhost:5500/`.
+5. Para abrir el panel de administración desde “Nuestra visión”, usa la pestaña **Administrador**. Para misión y visión, usa el enlace correspondiente de la navegación.
 
-   ```powershell
-   py server.py
-   ```
-
-   La terminal muestra el código temporal del panel de revisión. Es generado al iniciar el backend si no definiste `NEXUS_ADMIN_CODE`; úsalo desde “Panel de revisión”. No lo publiques ni lo compartas.
-
-4. Con Flask activo, abre `http://127.0.0.1:5000/` para cargar la tienda y la API desde el mismo servidor. También puedes abrir `index.html` con la extensión **Live Server**; si usa el puerto 5501, la API admite ese origen. Si el backend está apagado, Live Server muestra el modo visual de solo lectura.
-5. Para ver misión y visión, abre **Nuestra visión** desde la navegación.
-
-La API responde en `http://127.0.0.1:5000/api/health`. El archivo `nexus.db` se crea al ejecutar el backend por primera vez y no se incluye en el proyecto. La tarea automática de VS Code puede iniciar el backend al abrir la carpeta; en otro equipo, configura primero el entorno y las dependencias.
+La comprobación local de la API está en `http://127.0.0.1:5000/api/health` (solo loopback). En otro equipo, configura primero Python, sus dependencias, el SDK de .NET y el certificado local.
 
 ## Usar PostgreSQL
 
@@ -89,11 +85,17 @@ py iniciar_nexus.py            # inicia NEXUS siempre activo en http://localhost
 py iniciar_nexus.py --detener  # detiene el servidor
 ```
 
-Además, el guardian `nexus-siempre-activo.ps1` (tarea programada **NEXUS-SiempreActivo**) verifica cada 60 segundos que la página responda y la reinicia sola si llega a caer; también arranca al iniciar sesión de Windows. Registro del guardian: `nexus-guardian.log`.
+Para registrar e iniciar la tarea automática de Windows, ejecuta una vez desde PowerShell:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\registrar-tarea.ps1
+```
+
+La tarea **NEXUS-SiempreActivo** se ejecuta al iniciar sesión, mantiene activa la API y el sitio HTTPS, abre la página local en Chrome y reinicia ambos servicios si dejan de responder. Si Windows deniega el registro de la tarea por permisos, el script instala el acceso directo `NEXUS-SiempreActivo.lnk` en la carpeta de inicio del usuario, con el mismo comportamiento. Al apagar Windows los procesos se detienen; al volver a iniciar sesión se arrancan de nuevo. El guardián no requiere iniciar VS Code y registra actividad en `nexus-guardian.log`.
 
 Si el equipo se reinicia, vuelve a ejecutar `py iniciar_nexus.py`. El código del panel y la base de datos no cambian. Para crear el certificado local (candado en Chrome) usa `py make_cert.py` una sola vez.
 
-**Dirección oficial del proyecto:** <https://nexus.com> (dominio propio pendiente de registro; localmente la tienda corre en <http://localhost:5000>).
+**Dirección local de demostración:** <https://localhost:5500/>. La URL de GitHub que aparece abajo es el repositorio de código, no la dirección de un sitio publicado; GitHub Pages aún no está configurado. Para publicar la aplicación completa hacen falta un servicio de alojamiento para Flask y un dominio con DNS y certificado HTTPS.
 
 **Repositorio del proyecto:** <https://github.com/miguismu/Nexus-Tech-Market>
 
@@ -127,8 +129,8 @@ Si el equipo se reinicia, vuelve a ejecutar `py iniciar_nexus.py`. El código de
 
 ## Ejecutar con HTTPS local y candado
 
-Live Server tiene configurado el certificado local en `.vscode/settings.json`. Inicia la tarea de VS Code **NEXUS: iniciar API HTTPS segura**, luego inicia Live Server y abre `https://localhost:5500` (usa el puerto HTTPS que muestre la extension). La API funciona en `https://localhost:5443`; asi el carrito y el asistente de voz no hacen solicitudes HTTP inseguras desde la pagina segura.
+El certificado local está configurado en `.vscode/settings.json` para Live Server y en el host HTTPS. La tarea automática inicia el sitio seguro en `https://localhost:5500/`, enruta allí las llamadas de la API y lo abre en Chrome. Live Server usa el puerto `5501` para no competir por el puerto del host seguro; el catálogo, carrito y asistente usan el mismo enrutamiento HTTPS.
 
-Si Chrome no confia en el certificado, deten el proceso `run_https.py`, ejecuta `py make_cert.py` desde la misma cuenta de Windows que usa Chrome, reinicia la tarea de API y Live Server y, al final, reinicia Chrome. El certificado solo sirve para desarrollo local; publicar el sitio requiere un dominio y un certificado TLS valido.
+Si Chrome no confía en el certificado, ejecuta `py make_cert.py` desde la misma cuenta de Windows que usa Chrome y vuelve a iniciar la tarea. El certificado solo sirve para desarrollo local; publicar el sitio requiere un dominio y un certificado TLS válido.
 
 La ficha del Galaxy A57 5G usa la imagen correspondiente al modelo de 256 GB de Ktronix Colombia. Las cotizaciones incluyen descripcion, vendedor, precio de referencia en COP, fecha y enlace de la tienda. El boton **Descargar constancia** crea un registro local de una solicitud simulada; no acredita un pago.

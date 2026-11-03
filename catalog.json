@@ -46,7 +46,7 @@
         "description":  "10.5\" · Intel N200 · 8 GB RAM · SSD 128 GB. Anuncio de segunda mano, sin sistema operativo; precio e inventario pueden cambiar y el envío/impuestos deben confirmarse.",
         "price":  1050443,
         "glyph":  "▯",
-        "image_url":  "https://digiplanet.pt/cdn/shop/files/2_aca25135-8966-4185-9a30-e0b915827a68.png?v=1727997149\u0026width=1000",
+        "image_url":  "images/surface-go-4.svg",
         "product_url":  "https://www.ebay.com/itm/318102890995?_ul=CO",
         "seller":  "eBay · cotización observada; usada y sin SO, verificar anuncio",
         "checked_on":  "2026-10-28"
@@ -449,7 +449,7 @@
         "description":  "Paquete Elite x3 con Desk Dock: Snapdragon 820, 6\" AMOLED IP67 y experiencia PC continua con Windows 10 Mobile. Unidad corporativa de colección.",
         "price":  1150000,
         "glyph":  "▯",
-        "image_url":  "images/hp-elite-x3.jpg",
+        "image_url":  "images/hp-elite-x3-desk-dock.svg",
         "product_url":  "https://listado.mercadolibre.com.co/hp-elite-x3-desk-dock",
         "seller":  "Mercado Libre Colombia · referencia usada/coleccion; confirmar estado, vendedor, precio y disponibilidad",
         "checked_on":  "2026-10-29"
@@ -462,7 +462,7 @@
         "description":  "Tablet 2 en 1 de 10\" con Windows 10 Home en modo S, Pentium Gold, 4 GB RAM y 64 GB; ideal para estudio ligero con teclado Type Cover opcional.",
         "price":  1099000,
         "glyph":  "▤",
-        "image_url":  "https://digiplanet.pt/cdn/shop/files/2_aca25135-8966-4185-9a30-e0b915827a68.png?v=1727997149\u0026width=1000",
+        "image_url":  "images/surface-go-1.svg",
         "product_url":  "https://www.mercadolibre.com.co/microsoft-surface-go",
         "seller":  "Mercado Libre Colombia · referencia usada/coleccion; confirmar estado, vendedor, precio y disponibilidad",
         "checked_on":  "2026-10-29"

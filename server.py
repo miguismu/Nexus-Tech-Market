@@ -295,8 +295,8 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
         if any(k in text for k in ("segur", "candado", "https", "código", "codigo", "clave")):
             return ("La página usa CSRF, cookies HttpOnly y cabeceras de seguridad. Para el candado "
                     "HTTPS ejecuta el backend con run_https.py y acepta el certificado local.")
-        return (f"Te escuché decir: «{message.strip()}». Puedo ayudarte con el catálogo, las características y precios de referencia, "
-                "el carrito, las cotizaciones o las solicitudes de compra. ¿Qué quieres consultar?")
+        return ("Puedo ayudarte con el catálogo, las características y precios de referencia, el carrito, "
+                "las cotizaciones y las solicitudes de compra. ¿Qué necesitas saber?")
 
     @app.get("/api/products")
     def products():
@@ -496,4 +496,4 @@ if __name__ == "__main__":
     else:
         print("NEXUS activo: http://localhost:5000 (waitress · estable)")
     print("Administrador del panel: Miguel Alejandro Muñoz Suárez · código en .admin-code")
-    serve(app, host="0.0.0.0", port=5000, threads=6, connection_limit=200, channel_timeout=120)
+    serve(app, host="127.0.0.1", port=5000, threads=6, connection_limit=200, channel_timeout=120)

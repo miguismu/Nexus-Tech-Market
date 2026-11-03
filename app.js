@@ -1,11 +1,11 @@
 "use strict";
 
-const NEXUS_OFFICIAL_URL = "https://nexus.com"; // Dirección oficial del proyecto NEXUS Tech Market
 const API_HOST = window.location.hostname || "127.0.0.1";
 const API_PROTOCOL = window.location.protocol === "https:" ? "https:" : "http:";
 const API_BASE = (window.NEXUS_API_URL || (window.location.protocol === "https:"
-  ? `${window.location.origin}/api`
+  ? (window.location.port === "5501" ? `${API_PROTOCOL}//${API_HOST}:5500/api` : `${window.location.origin}/api`)
   : `${API_PROTOCOL}//${API_HOST}:5000/api`)).replace(/\/$/, "");
+window.NEXUS_API_URL = API_BASE;
 const CART_KEY = "nexus-cart-v1";
 const money = new Intl.NumberFormat("es-CO", {
   style: "currency",
@@ -554,5 +554,9 @@ $("#admin-logout").addEventListener("click", async () => {
 });
 
 loadCatalog();
+if (window.location.hash === "#administrador") {
+  $("#admin-modal").showModal();
+  $("#admin-name").focus();
+}
 // Exponer helpers para depuración y para las pruebas automatizadas del proyecto.
 window.NEXUS = { state, printableDocument, downloadQuote, downloadOrderRecord };

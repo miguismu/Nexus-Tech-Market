@@ -54,6 +54,51 @@ class NexusApiTests(unittest.TestCase):
         self.assertEqual(health.get_json()["status"], "ok")
         self.assertGreaterEqual(len(products.get_json()["products"]), 10)
 
+    def test_assistant_does_not_repeat_unrecognized_speech(self):
+        response = self.client.post("/api/assistant", json={"message": "consulta no reconocida"})
+        self.assertEqual(response.status_code, 200)
+        answer = response.get_json()["answer"]
+        self.assertNotIn("Te escuché decir", answer)
+        self.assertIn("¿Qué necesitas saber?", answer)
+
+    def test_corrected_product_images_are_distinct_and_served(self):
+        products = {row["id"]: row for row in _catalog_rows()}
+        product_ids = (
+            "surface-go-4",
+            "microsoft-surface-go-windows-tablet",
+            "hp-elite-x3",
+            "hp-elite-x3-desk-dock",
+        )
+        image_paths = [products[product_id]["image_url"] for product_id in product_ids]
+
+        self.assertEqual(len(image_paths), len(set(image_paths)))
+        for image_path in image_paths:
+            response = self.client.get(f"/{image_path}")
+            self.assertEqual(response.status_code, 200, image_path)
+            self.assertIn(response.mimetype, {"image/svg+xml", "image/jpeg"}, image_path)
+            response.close()
+
+        api_products = {
+            product["id"]: product
+            for product in self.client.get("/api/products").get_json()["products"]
+        }
+        order_response = self.client.post(
+            "/api/orders",
+            json={
+                "customer_name": "Estudiante de prueba",
+                "customer_email": "estudiante@example.com",
+                "items": [{"product_id": product_id, "quantity": 1} for product_id in product_ids],
+            },
+            headers=self.request_headers(),
+        )
+        self.assertEqual(order_response.status_code, 201)
+        order = order_response.get_json()["order"]
+        self.assertTrue(order["payment_code"].startswith("PAY-"))
+        self.assertEqual(
+            order["total"],
+            sum(api_products[product_id]["price"] for product_id in product_ids),
+        )
+
     def test_catalog_has_no_duplicate_products_and_keeps_requested_additions(self):
         rows = _catalog_rows()
         ids = [row["id"] for row in rows]
