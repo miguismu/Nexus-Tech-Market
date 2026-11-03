@@ -1,12 +1,22 @@
+param(
+    [string]$TaskUser,
+    [string]$StartupDirectory
+)
+
 $ErrorActionPreference = "Stop"
 $taskName = "NEXUS-SiempreActivo"
-$taskUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+if (-not $TaskUser) {
+    $TaskUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
+}
+if (-not $StartupDirectory) {
+    $StartupDirectory = [Environment]::GetFolderPath([Environment+SpecialFolder]::Startup)
+}
 $action = New-ScheduledTaskAction `
     -Execute (Join-Path $PSHOME "powershell.exe") `
     -Argument "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File `"$PSScriptRoot\nexus-siempre-activo.ps1`""
-$trigger = New-ScheduledTaskTrigger -AtLogOn -User $taskUser
+$trigger = New-ScheduledTaskTrigger -AtLogOn -User $TaskUser
 $principal = New-ScheduledTaskPrincipal `
-    -UserId $taskUser -LogonType S4U -RunLevel Limited
+    -UserId $TaskUser -LogonType S4U -RunLevel Limited
 $settings = New-ScheduledTaskSettingsSet `
     -MultipleInstances IgnoreNew `
     -ExecutionTimeLimit ([TimeSpan]::Zero) `
@@ -16,12 +26,6 @@ $settings = New-ScheduledTaskSettingsSet `
     -RestartCount 3 `
     -RestartInterval (New-TimeSpan -Minutes 1)
 
-Register-ScheduledTask -TaskName $taskName `
-    -Description "Supervisa la API y el sitio HTTPS de NEXUS aun después de cerrar sesión." `
-    -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force |
-    Out-Null
-
-$startupDirectory = [Environment]::GetFolderPath([Environment+SpecialFolder]::Startup)
 if (-not (Test-Path -LiteralPath $startupDirectory)) {
     throw "La carpeta de inicio de sesión no está disponible: $startupDirectory"
 }
@@ -34,6 +38,19 @@ $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -F
 $shortcut.WorkingDirectory = $PSScriptRoot
 $shortcut.WindowStyle = 7
 $shortcut.Save()
+
+$guardianStartupShortcut = Join-Path $startupDirectory "NEXUS-SiempreActivo.lnk"
+$guardianShortcut = $shell.CreateShortcut($guardianStartupShortcut)
+$guardianShortcut.TargetPath = Join-Path $PSHOME "powershell.exe"
+$guardianShortcut.Arguments = $action.Arguments
+$guardianShortcut.WorkingDirectory = $PSScriptRoot
+$guardianShortcut.WindowStyle = 7
+$guardianShortcut.Save()
+
+Register-ScheduledTask -TaskName $taskName `
+    -Description "Supervisa la API y el sitio HTTPS de NEXUS aun después de cerrar sesión." `
+    -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force |
+    Out-Null
 
 $legacyStartupShortcut = Join-Path $startupDirectory "NEXUS-SiempreActivo.lnk"
 if (Test-Path -LiteralPath $legacyStartupShortcut) {
