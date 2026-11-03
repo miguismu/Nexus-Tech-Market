@@ -36,7 +36,7 @@ El catálogo contiene productos sin fichas duplicadas. Sus precios e imágenes s
 
    `iniciar_nexus.py` mantiene la API local activa, guarda el código administrativo en `.admin-code` y conserva la clave de firma de sesión en `.session-secret`. No compartas esos archivos ni el código del panel.
 3. La dirección local segura es **<https://localhost:5500/>**. La base SQLite `nexus.db` conserva productos y solicitudes; la API solo escucha en el equipo local.
-4. Si prefieres usar **Live Server**, el puerto `5501` está reservado para evitar conflicto con el host HTTPS. Live Server está configurado para abrir Chrome; sus solicitudes a la API pasan por el host seguro de `https://localhost:5500/`.
+4. Si prefieres usar **Open with Live Server**, abre `index.html` y pulsa **Open with Live Server**. La dirección local será **<https://localhost:5501/>**; VS Code está configurado para usar HTTPS, abrir Chrome y servir desde la raíz del proyecto. El puerto `5501` evita conflicto con el host HTTPS principal. Las solicitudes a la API pasan por `https://localhost:5500/`. La URL `https://localhost:5500/` también sigue disponible como acceso directo seguro.
 5. Para abrir el panel de administración desde “Nuestra visión”, usa la pestaña **Administrador**. Para misión y visión, usa el enlace correspondiente de la navegación.
 
 La comprobación local de la API está en `http://127.0.0.1:5000/api/health` (solo loopback). En otro equipo, configura primero Python, sus dependencias, el SDK de .NET y el certificado local.

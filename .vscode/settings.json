@@ -7,5 +7,7 @@
                                   },
     "liveServer.settings.CustomBrowser":  "chrome",
     "liveServer.settings.NoBrowser": false,
-    "liveServer.settings.port":  5501
+    "liveServer.settings.port":  5501,
+    "liveServer.settings.root":  "/",
+    "liveServer.settings.file":  "index.html"
 }

@@ -99,6 +99,15 @@ class NexusApiTests(unittest.TestCase):
             sum(api_products[product_id]["price"] for product_id in product_ids),
         )
 
+    def test_xbox_series_s_uses_official_product_image(self):
+        xbox = next(row for row in _catalog_rows() if row["id"] == "xbox-series-s")
+        self.assertEqual(xbox["name"], "Xbox Series S 512 GB")
+        self.assertEqual(
+            xbox["image_url"],
+            "https://assets.xboxservices.com/assets/24/d0/"
+            "24d00bc1-5aac-48ad-bed8-398cbebaefa4.jpg?n=XSS_Sharing_200x200.jpg",
+        )
+
     def test_catalog_has_no_duplicate_products_and_keeps_requested_additions(self):
         rows = _catalog_rows()
         ids = [row["id"] for row in rows]
