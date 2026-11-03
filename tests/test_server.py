@@ -1,6 +1,7 @@
 import unittest
 import tempfile
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -73,6 +74,9 @@ class NexusApiTests(unittest.TestCase):
 
         self.assertEqual(len(image_paths), len(set(image_paths)))
         for image_path in image_paths:
+            if urlsplit(image_path).scheme in {"http", "https"}:
+                self.assertTrue(urlsplit(image_path).netloc, image_path)
+                continue
             response = self.client.get(f"/{image_path}")
             self.assertEqual(response.status_code, 200, image_path)
             self.assertIn(response.mimetype, {"image/svg+xml", "image/jpeg"}, image_path)
@@ -98,6 +102,29 @@ class NexusApiTests(unittest.TestCase):
             order["total"],
             sum(api_products[product_id]["price"] for product_id in product_ids),
         )
+
+    def test_surface_go_4_has_product_photo_and_used_price_reference(self):
+        surface = next(row for row in _catalog_rows() if row["id"] == "surface-go-4")
+        self.assertEqual(
+            surface["image_url"],
+            "https://cdn.a1tech.deals/products/A1T-HF8YYCGWZ1/0_d8255f52.jpg",
+        )
+        self.assertEqual(surface["price"], 796236)
+        self.assertEqual(surface["checked_on"], "2026-11-03")
+        self.assertIn("US$249,99", surface["description"])
+        self.assertIn("Foto ilustrativa", surface["seller"])
+
+    def test_hp_elite_x3_bundle_has_real_photo_and_labeled_used_price_reference(self):
+        hp = next(row for row in _catalog_rows() if row["id"] == "hp-elite-x3-desk-dock")
+        self.assertEqual(
+            hp["image_url"],
+            "https://upload.wikimedia.org/wikipedia/commons/8/8e/HP_Elite_X3.jpg",
+        )
+        self.assertEqual(hp["price"], 716625)
+        self.assertEqual(hp["checked_on"], "2026-11-03")
+        self.assertIn("US$150–300", hp["description"])
+        self.assertIn("Languaeditor / Wikimedia Commons", hp["seller"])
+        self.assertIn("el dock no aparece", hp["seller"])
 
     def test_xbox_series_s_uses_official_product_image(self):
         xbox = next(row for row in _catalog_rows() if row["id"] == "xbox-series-s")
