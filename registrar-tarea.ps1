@@ -6,7 +6,13 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$taskName = "NEXUS-SiempreActivo"
+$systemTaskName = "NEXUS-SiempreActivo"
+$taskName = if ($RunAtSystemStartup) {
+    $systemTaskName
+}
+else {
+    "NEXUS-SiempreActivo-Usuario"
+}
 if (-not $TaskUser) {
     $TaskUser = [Security.Principal.WindowsIdentity]::GetCurrent().Name
 }
@@ -53,14 +59,17 @@ if ($RunAtSystemStartup) {
         $PythonSitePackages,
         (New-Object System.Text.UTF8Encoding($false))
     )
-    $currentTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-    if ($currentTask -and $currentTask.State -eq "Running") {
-        Stop-ScheduledTask -TaskName $taskName
-        $stopDeadline = (Get-Date).AddSeconds(10)
-        do {
-            Start-Sleep -Milliseconds 250
-            $currentTask = Get-ScheduledTask -TaskName $taskName
-        } while ($currentTask.State -eq "Running" -and (Get-Date) -lt $stopDeadline)
+}
+$currentTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+if ($currentTask -and $currentTask.State -eq "Running") {
+    Stop-ScheduledTask -TaskName $taskName
+    $stopDeadline = (Get-Date).AddSeconds(10)
+    do {
+        Start-Sleep -Milliseconds 250
+        $currentTask = Get-ScheduledTask -TaskName $taskName
+    } while ($currentTask.State -eq "Running" -and (Get-Date) -lt $stopDeadline)
+    if ($currentTask.State -eq "Running") {
+        throw "No se pudo detener la tarea '$taskName' antes de actualizarla."
     }
 }
 $action = New-ScheduledTaskAction `
@@ -190,6 +199,19 @@ if ($RunAtSystemStartup -and
      $task.Principal.LogonType -ne "ServiceAccount" -or
      $task.Triggers[0].CimClass.CimClassName -notmatch "BootTrigger")) {
     throw "La tarea se ejecuta, pero no quedó configurada como SYSTEM al iniciar Windows."
+}
+if (-not $RunAtSystemStartup) {
+    $expectedUserSid = ([Security.Principal.NTAccount]::new($TaskUser)).Translate(
+        [Security.Principal.SecurityIdentifier]
+    ).Value
+    $actualUserSid = ([Security.Principal.NTAccount]::new($task.Principal.UserId)).Translate(
+        [Security.Principal.SecurityIdentifier]
+    ).Value
+    if ($task.Principal.LogonType -notin @("S4U", "Interactive") -or
+        $task.Triggers[0].CimClass.CimClassName -notmatch "LogonTrigger" -or
+        $actualUserSid -ne $expectedUserSid) {
+        throw "La tarea no quedó configurada para iniciar la API con la cuenta local del usuario al iniciar sesión."
+    }
 }
 
 $task | Select-Object TaskName, State, TaskPath, Description

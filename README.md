@@ -22,7 +22,7 @@ Tienda académica de hardware y tecnología con frontend en HTML, CSS y JavaScri
 
 El catálogo contiene productos sin fichas duplicadas, incluido el Galaxy A55 restaurado. Sus precios e imágenes son referencias: cambian según tienda, variante, inventario y fecha de consulta. El Galaxy A55 usa una ilustración propia y un precio académico orientativo, no una cotización vigente. Las fichas de cotización generan un archivo descargable con código de referencia; al registrar una solicitud, la página genera una constancia de simulación. Ninguno de esos documentos es recibo fiscal, comprobante de pago ni confirmación de compra.
 
-Cada producto incluido en una solicitud recibe su propio código PAY único, guardado en `purchase_items`; los productos de una misma solicitud no comparten código. Tras registrar la solicitud, su primer código se consulta automáticamente y cada ficha incluida muestra el PAY correspondiente. También puedes verificar cualquier PAY en la barra debajo de «Explorar catálogo». El resultado muestra el producto asociado, la fecha de registro, el estado de la solicitud y, cuando ya fue revisada, la fecha y el resultado de la decisión administrativa. Los códigos identifican solicitudes simuladas; no son pagos reales. Los códigos antiguos de solicitud siguen siendo válidos para consulta. Al iniciar Windows, el supervisor reinicia una API NEXUS Python que aún esté respondiendo en el puerto local para aplicar el código y las migraciones actuales.
+Cada producto incluido en una solicitud recibe su propio código PAY único, guardado en `purchase_items`; los productos de una misma solicitud no comparten código. Tras registrar la solicitud, su primer código se consulta automáticamente y cada ficha incluida muestra el PAY correspondiente. También puedes verificar cualquier PAY en la barra debajo de «Explorar catálogo». El resultado muestra el producto asociado, la fecha de registro, el estado de la solicitud y, cuando ya fue revisada, la fecha y el resultado de la decisión administrativa. Los códigos identifican solicitudes simuladas; no son pagos reales. Los códigos antiguos de solicitud siguen siendo válidos para consulta. El supervisor inicia la API al iniciar sesión y la recupera si deja de responder.
 
 ## Ejecutarlo en Visual Studio Code
 
@@ -94,15 +94,13 @@ Para registrar e iniciar la tarea automática de Windows, ejecuta una vez desde 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\registrar-tarea.ps1
 ```
 
-Para que NEXUS siga activo al cerrar sesión, registra la tarea como SYSTEM desde una consola PowerShell elevada:
+Para iniciar la API automáticamente con tu cuenta de Windows, registra la tarea de usuario desde PowerShell:
 
 ```powershell
-.\registrar-tarea.ps1 -RunAtSystemStartup `
-  -TaskUser "$env:USERDOMAIN\$env:USERNAME" `
-  -StartupDirectory ([Environment]::GetFolderPath('Startup'))
+.\registrar-tarea.ps1 -TaskUser "$env:USERDOMAIN\$env:USERNAME"
 ```
 
-La tarea se ejecuta al iniciar Windows, reanuda los servicios aun sin sesión interactiva y escribe los errores en `nexus-guardian.log`. La instalación necesita el Python y `site-packages` de la cuenta del proyecto; guarda sus rutas locales en `.nexus-python-exe` y `.nexus-python-site` (excluidas de Git). La tarea SYSTEM ejecuta scripts del proyecto con privilegios del sistema. Antes de instalarla, protege la carpeta del proyecto contra modificaciones de otros usuarios; el script de registro no configura permisos ACL. Ejecuta el registro elevado solo después de revisar los cambios. El acceso directo `NEXUS-VSCode.lnk` abre este proyecto al iniciar sesión. Esto no mantiene la web disponible mientras el computador está apagado. Si no se aprueba UAC o el Programador de tareas rechaza el registro, la tarea no se considera instalada.
+La tarea `NEXUS-SiempreActivo-Usuario` usa la cuenta local que tiene el entorno `.venv`; así puede importar las dependencias de Python instaladas para ese usuario y reiniciar la API sin privilegios de administrador. Se activa al iniciar sesión y escribe los errores en `nexus-guardian.log`; también crea un acceso directo que abre este proyecto en VS Code. Si Windows rechaza el inicio S4U, el instalador avisa y crea una tarea interactiva, que supervisa NEXUS mientras la sesión de Windows permanezca abierta. El modo `-RunAtSystemStartup` ejecuta la tarea como SYSTEM y no se recomienda con Python instalado solo para el usuario: SYSTEM no puede usar de forma confiable ese entorno ni su perfil. Ninguna configuración mantiene la web disponible cuando el computador está apagado.
 
 La tarea de Windows y el acceso directo de inicio mantienen NEXUS disponible sin depender de VS Code. El acceso directo `NEXUS-VSCode.lnk` abre este proyecto al iniciar sesión. **Open with Live Server** usa el puerto `5501` y requiere que VS Code y su extensión estén abiertos; inícialo manualmente desde VS Code. El host HTTPS de NEXUS en el puerto `5500` permanece activo sin Live Server y conserva el proxy de la API. El código del panel y la base de datos no cambian. Para crear o renovar el certificado local (candado en Chrome) usa `py make_cert.py` con la cuenta de Windows que utiliza Chrome.
 
