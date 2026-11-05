@@ -124,6 +124,7 @@ function Start-SecureSite {
 
 function Stop-UserNexusProcesses {
     $apiServer = Join-Path $root "server.py"
+    $guardianScript = Join-Path $root "nexus-siempre-activo.ps1"
     $patterns = @(
         [regex]::Escape($apiServer),
         [regex]::Escape($httpsStarter),
@@ -142,12 +143,39 @@ function Stop-UserNexusProcesses {
             Stop-Process -Id $process.ProcessId -Force -ErrorAction SilentlyContinue
         }
     }
+    $duplicateGuardians = Get-CimInstance Win32_Process | Where-Object {
+        $_.ProcessId -ne $PID -and $_.Name -match "^powershell(?:\.exe)?$" -and
+        $_.CommandLine -match [regex]::Escape($guardianScript)
+    }
+    foreach ($guardian in $duplicateGuardians) {
+        Write-Log "Cerrando supervisor NEXUS duplicado PID $($guardian.ProcessId)."
+        Stop-Process -Id $guardian.ProcessId -Force -ErrorAction SilentlyContinue
+    }
     $deadline = (Get-Date).AddSeconds(15)
     while ((Get-Date) -lt $deadline) {
         if (-not (Test-Endpoint $apiUrl) -and -not (Test-Endpoint $siteUrl)) {
             return
         }
         Start-Sleep -Milliseconds 500
+    }
+
+    if (Test-Endpoint $apiUrl) {
+        $apiPort = ([Uri]$apiUrl).Port
+        $apiListeners = @(
+            Get-NetTCPConnection -LocalPort $apiPort -State Listen -ErrorAction Stop |
+                Select-Object -ExpandProperty OwningProcess -Unique
+        )
+        foreach ($listenerProcessId in $apiListeners) {
+            $listenerProcess = Get-Process -Id $listenerProcessId -ErrorAction Stop
+            if ($listenerProcess.ProcessName -notmatch "^python(?:3(?:\.\d+)?)?$") {
+                continue
+            }
+            Write-Log "Reiniciando el listener de la API NEXUS PID $listenerProcessId para aplicar la versión del proyecto."
+            Stop-Process -Id $listenerProcessId -Force -ErrorAction Stop
+        }
+        if (Test-Endpoint $apiUrl) {
+            throw "La API NEXUS siguió respondiendo después de detener su listener; no se puede aplicar la migración."
+        }
     }
 }
 

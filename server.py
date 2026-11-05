@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from flask import Flask, jsonify, request, send_from_directory, session
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, create_engine, func, select
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, create_engine, func, inspect, select, text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, sessionmaker
 
@@ -47,13 +47,15 @@ APPLICATION_METADATA = {
     ),
     "features": (
         "Catálogo por categorías, búsqueda, fichas de productos, carrito, solicitudes simuladas, "
-        "códigos de consulta, panel administrativo, asistente de voz y páginas de visión."
+        "código PAY único por producto solicitado con consulta de estado y fechas, panel "
+        "administrativo, asistente de voz y páginas de visión."
     ),
     "database_contents": (
         "products: catálogo estructurado y precios de referencia; purchase_requests: solicitudes "
-        "simuladas y datos de contacto ingresados; purchase_items: productos y cantidades por "
-        "solicitud; application_metadata: descripción, propósito, funciones y límites del sistema. "
-        "Las imágenes, vendedores y URL de producto complementarias se mantienen en catalog.json."
+        "simuladas y datos de contacto ingresados; purchase_items: productos, cantidades y un "
+        "código PAY único por producto solicitado; application_metadata: descripción, propósito, "
+        "funciones y límites del sistema. Las imágenes, vendedores y URL complementarias se "
+        "mantienen en catalog.json."
     ),
     "payment_notice": (
         "La aplicación no procesa pagos, no envía pedidos a comercios y no confirma compras; "
@@ -116,7 +118,46 @@ class PurchaseItem(Base):
     product_name: Mapped[str] = mapped_column(String(140), nullable=False)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[int] = mapped_column(Integer, nullable=False)
+    payment_code: Mapped[str] = mapped_column(String(40), nullable=False)
     purchase_request: Mapped[PurchaseRequest] = relationship(back_populates="items")
+
+    __table_args__ = (
+        Index("uq_purchase_items_payment_code", "payment_code", unique=True),
+    )
+
+
+def _new_item_payment_code() -> str:
+    return f"PAY-{datetime.now(timezone.utc):%y%m%d}-{secrets.token_hex(8).upper()}"
+
+
+def _ensure_purchase_item_payment_codes(engine) -> None:
+    columns = {column["name"] for column in inspect(engine).get_columns("purchase_items")}
+    if "payment_code" not in columns:
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "ALTER TABLE purchase_items ADD COLUMN payment_code VARCHAR(40)"
+            )
+
+    with engine.begin() as connection:
+        legacy_items = connection.execute(
+            text(
+                "SELECT id FROM purchase_items "
+                "WHERE payment_code IS NULL OR payment_code = ''"
+            )
+        ).all()
+        for (item_id,) in legacy_items:
+            connection.execute(
+                text("UPDATE purchase_items SET payment_code = :code WHERE id = :item_id"),
+                {"code": _new_item_payment_code(), "item_id": item_id},
+            )
+
+    index_names = {index["name"] for index in inspect(engine).get_indexes("purchase_items")}
+    if "uq_purchase_items_payment_code" not in index_names:
+        with engine.begin() as connection:
+            connection.exec_driver_sql(
+                "CREATE UNIQUE INDEX uq_purchase_items_payment_code "
+                "ON purchase_items (payment_code)"
+            )
 
 
 def _catalog_rows() -> list[dict[str, Any]]:
@@ -156,6 +197,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
     engine = create_engine(database_url, **engine_options)
     session_factory = sessionmaker(bind=engine, expire_on_commit=False)
     Base.metadata.create_all(engine)
+    _ensure_purchase_item_payment_codes(engine)
     app.extensions["nexus_session_factory"] = session_factory
     app.extensions["nexus_engine"] = engine
 
@@ -258,6 +300,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     "product_name": item.product_name,
                     "quantity": item.quantity,
                     "unit_price": item.unit_price,
+                    "payment_code": item.payment_code,
                 }
                 for item in order.items
             ],
@@ -283,18 +326,38 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 select(PurchaseRequest).where(PurchaseRequest.payment_code == clean)
             ).first()
             if order is None:
+                matching_item = db.scalars(
+                    select(PurchaseItem).where(PurchaseItem.payment_code == clean)
+                ).first()
+                order = matching_item.purchase_request if matching_item else None
+            else:
+                matching_item = None
+            if order is None:
                 return _error("No encontramos una compra con ese código.", 404)
+            created_at = order.created_at
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=timezone.utc)
+            decided_at = order.decided_at
+            if decided_at and decided_at.tzinfo is None:
+                decided_at = decided_at.replace(tzinfo=timezone.utc)
             return jsonify({
                 "number": order.number,
-                "payment_code": order.payment_code,
+                "payment_code": clean,
+                "order_payment_code": order.payment_code,
                 "status": order.status,
                 "total": order.total,
-                "created_at": order.created_at.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+                "created_at": created_at.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+                "decided_at": decided_at.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC") if decided_at else None,
+                "product_found_at": created_at.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+                "matched_product_id": matching_item.product_id if matching_item else None,
                 "items": [
                     {
+                        "payment_code": item.payment_code,
                         "product_id": item.product_id,
                         "product_name": item.product_name,
                         "quantity": item.quantity,
+                        "unit_price": item.unit_price,
+                        "subtotal": item.quantity * item.unit_price,
                     }
                     for item in order.items
                 ],
@@ -420,6 +483,7 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                     product_name=product.name,
                     quantity=quantity,
                     unit_price=product.price,
+                    payment_code=_new_item_payment_code(),
                 )
                 for product_id, quantity in requested.items()
                 for product in [catalog[product_id]]

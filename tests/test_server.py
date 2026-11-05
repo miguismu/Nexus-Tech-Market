@@ -1,12 +1,20 @@
 import unittest
 import tempfile
+import re
 from pathlib import Path
 from urllib.parse import urlsplit
 
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import sessionmaker
 
-from server import ApplicationMetadata, Base, Product, _catalog_rows, create_app
+from server import (
+    ApplicationMetadata,
+    Base,
+    Product,
+    _catalog_rows,
+    _ensure_purchase_item_payment_codes,
+    create_app,
+)
 
 
 class NexusApiTests(unittest.TestCase):
@@ -175,6 +183,7 @@ class NexusApiTests(unittest.TestCase):
         self.assertEqual(metadata["name"], "NEXUS Tech Market")
         self.assertIn("solicitudes", metadata["purpose"])
         self.assertIn("purchase_requests", metadata["database_contents"])
+        self.assertIn("código PAY único por producto", metadata["database_contents"])
         self.assertIn("asistente de voz", metadata["features"])
         self.assertIn("no procesa pagos", metadata["payment_notice"])
 
@@ -280,22 +289,94 @@ class NexusApiTests(unittest.TestCase):
 
     def test_payment_code_verification_returns_order_products_without_customer_data(self):
         order = self.create_order().get_json()["order"]
-        response = self.client.get(f"/api/orders/verify/{order['payment_code'].lower()}")
+        item = order["items"][0]
+        response = self.client.get(f"/api/orders/verify/{item['payment_code'].lower()}")
 
         self.assertEqual(response.status_code, 200)
         verified = response.get_json()
-        self.assertEqual(verified["payment_code"], order["payment_code"])
+        self.assertEqual(verified["payment_code"], item["payment_code"])
         self.assertEqual(verified["number"], order["number"])
-        self.assertEqual(
-            verified["items"],
-            [{
-                "product_id": order["items"][0]["product_id"],
-                "product_name": order["items"][0]["product_name"],
-                "quantity": order["items"][0]["quantity"],
-            }],
-        )
+        self.assertEqual(verified["matched_product_id"], item["product_id"])
+        self.assertEqual(verified["product_found_at"], verified["created_at"])
+        self.assertIsNone(verified["decided_at"])
+        self.assertEqual(verified["items"][0]["payment_code"], item["payment_code"])
+        self.assertEqual(verified["items"][0]["product_name"], item["product_name"])
         self.assertNotIn("customer_name", verified)
         self.assertNotIn("customer_email", verified)
+
+    def test_each_requested_product_has_a_unique_pay_code_and_approved_date(self):
+        products = self.client.get("/api/products").get_json()["products"][:2]
+        response = self.client.post(
+            "/api/orders",
+            json={
+                "customer_name": "Estudiante de prueba",
+                "customer_email": "estudiante@example.com",
+                "items": [
+                    {"product_id": product["id"], "quantity": 1}
+                    for product in products
+                ],
+            },
+            headers=self.request_headers(),
+        )
+        self.assertEqual(response.status_code, 201)
+        order = response.get_json()["order"]
+        items = order["items"]
+        payment_codes = [item["payment_code"] for item in items]
+        self.assertEqual(len(payment_codes), 2)
+        self.assertEqual(len(set(payment_codes)), 2)
+        for payment_code in payment_codes:
+            self.assertRegex(payment_code, r"^PAY-\d{6}-[A-F0-9]{16}$")
+
+        for item in items:
+            verified = self.client.get(
+                f"/api/orders/verify/{item['payment_code']}"
+            ).get_json()
+            self.assertEqual(verified["matched_product_id"], item["product_id"])
+            self.assertEqual(
+                next(entry for entry in verified["items"] if entry["product_id"] == item["product_id"])["payment_code"],
+                item["payment_code"],
+            )
+            self.assertTrue(verified["product_found_at"])
+
+        self.login_as_admin()
+        decision = self.client.post(
+            f"/api/admin/orders/{order['id']}/decision",
+            json={"decision": "approved"},
+            headers=self.request_headers(),
+        )
+        self.assertEqual(decision.status_code, 200)
+        for item in items:
+            verified = self.client.get(
+                f"/api/orders/verify/{item['payment_code']}"
+            ).get_json()
+            self.assertEqual(verified["status"], "aprobada")
+            self.assertTrue(verified["decided_at"])
+
+    def test_legacy_purchase_items_receive_unique_pay_codes_on_startup(self):
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database_path = Path(temporary_directory) / "legacy.sqlite"
+            engine = create_engine(f"sqlite:///{database_path}")
+            with engine.begin() as connection:
+                connection.exec_driver_sql(
+                    "CREATE TABLE purchase_items (id INTEGER PRIMARY KEY)"
+                )
+                connection.exec_driver_sql(
+                    "INSERT INTO purchase_items (id) VALUES (1), (2)"
+                )
+
+            _ensure_purchase_item_payment_codes(engine)
+            with engine.connect() as connection:
+                codes = connection.exec_driver_sql(
+                    "SELECT payment_code FROM purchase_items ORDER BY id"
+                ).scalars().all()
+                indexes = connection.exec_driver_sql(
+                    "PRAGMA index_list(purchase_items)"
+                ).fetchall()
+            engine.dispose()
+
+        self.assertEqual(len(set(codes)), 2)
+        self.assertTrue(all(re.fullmatch(r"PAY-\d{6}-[A-F0-9]{16}", code) for code in codes))
+        self.assertTrue(any(index[1] == "uq_purchase_items_payment_code" for index in indexes))
 
     def test_payment_code_verification_reports_unknown_codes(self):
         response = self.client.get("/api/orders/verify/PAY-000000-0000000000")

@@ -44,9 +44,10 @@ function persistCart() {
 function readLatestPaymentRecord() {
   try {
     const record = JSON.parse(sessionStorage.getItem(LAST_PAYMENT_KEY) || "null");
-    if (!record || !/^PAY-\d{6}-[A-F0-9]{10}$/i.test(record.payment_code) ||
+    if (!record || !/^PAY-\d{6}-[A-F0-9]{10}(?:[A-F0-9]{6})?$/i.test(record.payment_code) ||
       !Array.isArray(record.items) ||
-      record.items.some((item) => typeof item.product_id !== "string" || !item.product_id)) {
+      record.items.some((item) => typeof item.product_id !== "string" || !item.product_id ||
+        !/^PAY-\d{6}-[A-F0-9]{16}$/i.test(item.payment_code))) {
       return null;
     }
     return record;
@@ -56,16 +57,20 @@ function readLatestPaymentRecord() {
 }
 
 function rememberPaymentRecord(order) {
+  const firstItem = order.items[0];
   latestPaymentRecord = {
-    payment_code: order.payment_code,
+    payment_code: firstItem?.payment_code || order.payment_code,
     number: order.number,
     status: order.status,
     total: order.total,
     created_at: order.created_at,
     items: order.items.map((item) => ({
+      payment_code: item.payment_code,
       product_id: item.product_id,
       product_name: item.product_name,
-      quantity: item.quantity
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      subtotal: item.subtotal ?? item.unit_price * item.quantity
     }))
   };
   try {
@@ -128,7 +133,7 @@ function downloadOrderRecord(order) {
     const product = state.products.find((entry) => entry.id === item.product_id || entry.name === item.product_name);
     return {
       label: `${item.quantity} × ${item.product_name}`,
-      detail: `Precio unitario de referencia: ${money.format(item.unit_price)}`,
+      detail: `PAY de este producto: ${item.payment_code} · Precio unitario de referencia: ${money.format(item.unit_price)}`,
       value: money.format(item.quantity * item.unit_price)
     };
   });
@@ -269,13 +274,14 @@ function productOfficialSource(product) {
 }
 
 function productPaymentCard(product) {
-  const payment = latestPaymentRecord?.items.some((item) => item.product_id === product.id)
-    ? latestPaymentRecord
-    : null;
-  if (!payment) {
+  const item = latestPaymentRecord?.items.find((entry) => entry.product_id === product.id);
+  if (!item) {
     return `<section class="product-pay-card"><div><span class="product-pay-label">CÓDIGO PAY</span><p>El código se genera al registrar una solicitud que incluya este producto. Si ya tienes un PAY, puedes consultarlo en la barra de verificación.</p></div><button class="button button-outline" type="button" data-open-verify>Ir a verificar</button></section>`;
   }
-  return `<section class="product-pay-card product-pay-card-ready"><div><span class="product-pay-label">CÓDIGO PAY DE TU SOLICITUD</span><code class="product-pay-code">${escapeHtml(payment.payment_code)}</code><p>Orden ${escapeHtml(payment.number)} · ${escapeHtml(payment.status)}. Escríbelo en el verificador para consultar su estado.</p></div><button class="button button-outline" type="button" data-detail-verify="${escapeHtml(payment.payment_code)}">Verificar PAY</button></section>`;
+  const acceptedAt = latestPaymentRecord.decided_at
+    ? ` · Aceptada el ${escapeHtml(latestPaymentRecord.decided_at)}`
+    : "";
+  return `<section class="product-pay-card product-pay-card-ready"><div><span class="product-pay-label">PAY ÚNICO DE ESTE PRODUCTO</span><code class="product-pay-code">${escapeHtml(item.payment_code)}</code><p>Orden ${escapeHtml(latestPaymentRecord.number)} · Solicitud ${escapeHtml(latestPaymentRecord.status)}${acceptedAt}. Generado: ${escapeHtml(latestPaymentRecord.created_at || "fecha no disponible")}.</p></div><button class="button button-outline" type="button" data-detail-verify="${escapeHtml(item.payment_code)}">Verificar PAY</button></section>`;
 }
 
 function focusPaymentVerifier() {
@@ -501,17 +507,18 @@ $("#checkout-form").addEventListener("submit", async (event) => {
     });
     latestRegisteredOrder = result.order;
     rememberPaymentRecord(result.order);
-    $("#order-download-label").textContent = `Solicitud ${result.order.payment_code} registrada. Descarga su constancia simulada.`;
+    const firstItemCode = result.order.items[0].payment_code;
+    $("#order-download-label").textContent = `Solicitud ${result.order.number} registrada. Cada producto tiene un PAY único en su ficha: ${result.order.items.map((item) => `${item.product_name}: ${item.payment_code}`).join(" · ")}.`;
     $("#order-download").hidden = false;
     state.cart = {};
     persistCart();
     refreshCart();
     $("#checkout-modal").close();
     $("#checkout-form").reset();
-    $("#verify-code").value = result.order.payment_code;
-    await verifyPaymentCode(result.order.payment_code);
+    $("#verify-code").value = firstItemCode;
+    await verifyPaymentCode(firstItemCode);
     $("#verify-form").scrollIntoView({ behavior: "smooth", block: "center" });
-    showToast(`Compra ${result.order.payment_code} registrada. Descargué tu comprobante con el código.`, "success");
+    showToast(`Solicitud registrada. Cada producto tiene un PAY distinto; el primero ya está verificado.`, "success");
   } catch (error) {
     showToast(error.message || "No se pudo registrar la solicitud.", "error");
   } finally {
@@ -543,8 +550,14 @@ async function verifyPaymentCode(rawCode) {
     rememberPaymentRecord(data);
     result.hidden = false;
     result.className = "verify-result verify-ok";
-    const verifiedItems = data.items.map((item) => `${item.quantity} × ${item.product_name}`).join(", ");
-    result.innerHTML = `<b>✓ ${escapeHtml(data.payment_code)}</b> · Orden ${escapeHtml(data.number)} · Estado: <span class="verify-status">${escapeHtml(data.status)}</span> · ${escapeHtml(data.created_at)} · Total ${money.format(data.total)}<span class="verify-items">Productos: ${escapeHtml(verifiedItems)}</span>`;
+    const verifiedItems = data.items.map((item) =>
+      `${item.quantity} × ${item.product_name} · ${item.payment_code} · ${money.format(item.subtotal)}`
+    ).join(" | ");
+    const status = data.status === "aprobada" ? "ACEPTADA" : data.status.toLocaleUpperCase("es");
+    const decisionDate = data.decided_at
+      ? `<span class="verify-items">Fecha de respuesta: ${escapeHtml(data.decided_at)} · Solicitud ${status}</span>`
+      : `<span class="verify-items">La solicitud aún está ${escapeHtml(data.status)}; todavía no ha sido aceptada por el administrador.</span>`;
+    result.innerHTML = `<b>✓ ${escapeHtml(data.payment_code)}</b> · Orden ${escapeHtml(data.number)} · Estado: <span class="verify-status">${escapeHtml(status)}</span> · Total ${money.format(data.total)}<span class="verify-items">Fecha de producto encontrado / solicitud: ${escapeHtml(data.product_found_at || data.created_at)}</span>${decisionDate}<span class="verify-items">Productos y PAY únicos: ${escapeHtml(verifiedItems)}</span>`;
   } catch (error) {
     result.hidden = false;
     result.className = "verify-result verify-fail";
