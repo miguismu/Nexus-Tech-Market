@@ -30,12 +30,12 @@ El catálogo contiene productos sin fichas duplicadas, incluido el Galaxy A55 re
    ```powershell
    py -m venv .venv
    .\.venv\Scripts\Activate.ps1
-   py -m pip install -r requirements.txt
+   python -m pip install -r requirements.txt
    py iniciar_nexus.py
    dotnet run --no-launch-profile --project .\secure-host\NexusHttpsHost.csproj
    ```
 
-   `iniciar_nexus.py` mantiene la API local activa, sincroniza el catálogo y la ficha descriptiva `application_metadata` en la base de datos, guarda el código administrativo en `.admin-code` y conserva la clave de firma de sesión en `.session-secret`. No compartas esos archivos ni el código del panel.
+   `iniciar_nexus.py` mantiene la API local activa y usa `.venv` para ejecutar el servidor cuando está disponible. El supervisor de Windows también prefiere ese entorno virtual para evitar diferencias de dependencias entre cuentas. El lanzador sincroniza el catálogo y la ficha descriptiva `application_metadata` en la base de datos, guarda el código administrativo en `.admin-code` y conserva la clave de firma de sesión en `.session-secret`. No compartas esos archivos ni el código del panel.
 3. La dirección de desarrollo con el nombre NEXUS es **<https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5500/>**. El subdominio usa DNS de sslip.io para apuntar a `127.0.0.1` en este equipo; no publica el sitio en Internet ni es un dominio propio. La base SQLite `nexus.db` conserva productos y solicitudes; la API solo escucha en el equipo local.
 4. Para usar **Open with Live Server**, abre `index.html` y pulsa **Open with Live Server**. La dirección será **<https://miguismu-nexus-tech-market.127.0.0.1.sslip.io:5501/>**; VS Code está configurado para servir desde la raíz, usar HTTPS y abrir Chrome con ese nombre. El puerto `5501` evita conflicto con el host HTTPS de la API en `5500`. La URL `https://localhost:5500/` sigue disponible como alternativa local.
 5. Para abrir el panel de administración desde “Nuestra visión”, usa la pestaña **Administrador**. Para misión y visión, usa el enlace correspondiente de la navegación.

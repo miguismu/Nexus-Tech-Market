@@ -7,15 +7,22 @@ $apiStarter = Join-Path $root "iniciar_nexus.py"
 $httpsStarter = Join-Path $root "iniciar-nexus-https.ps1"
 $pythonPathFile = Join-Path $root ".nexus-python-exe"
 $pythonSitePathFile = Join-Path $root ".nexus-python-site"
+$venvPython = Join-Path $root ".venv\Scripts\python.exe"
 $script:lastEndpointError = "sin detalles"
 $script:runningAsSystem = [Security.Principal.WindowsIdentity]::GetCurrent().IsSystem
-$script:pythonExecutable = if (Test-Path -LiteralPath $pythonPathFile) {
+$script:pythonExecutable = if (Test-Path -LiteralPath $venvPython -PathType Leaf) {
+    $venvPython
+}
+elseif (Test-Path -LiteralPath $pythonPathFile) {
     (Get-Content -LiteralPath $pythonPathFile -Raw -Encoding UTF8).Trim()
 }
 else {
     (Get-Command "py.exe" -ErrorAction SilentlyContinue).Source
 }
-$script:pythonSitePackages = if (Test-Path -LiteralPath $pythonSitePathFile) {
+$script:pythonSitePackages = if ($script:pythonExecutable -eq $venvPython) {
+    $null
+}
+elseif (Test-Path -LiteralPath $pythonSitePathFile) {
     (Get-Content -LiteralPath $pythonSitePathFile -Raw -Encoding UTF8).Trim()
 }
 else {
