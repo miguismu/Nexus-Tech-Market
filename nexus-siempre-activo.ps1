@@ -19,7 +19,11 @@ elseif (Test-Path -LiteralPath $pythonPathFile) {
 else {
     (Get-Command "py.exe" -ErrorAction SilentlyContinue).Source
 }
-$script:pythonSitePackages = if ($script:pythonExecutable -eq $venvPython) {
+$script:pythonSitePackages = if ($script:runningAsSystem -and
+    $script:pythonExecutable -eq $venvPython) {
+    Join-Path $root ".venv\Lib\site-packages"
+}
+elseif ($script:pythonExecutable -eq $venvPython) {
     $null
 }
 elseif (Test-Path -LiteralPath $pythonSitePathFile) {

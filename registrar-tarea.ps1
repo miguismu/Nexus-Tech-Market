@@ -101,7 +101,19 @@ if (-not (Test-Path -LiteralPath $startupDirectory)) {
     throw "La carpeta de inicio de sesión no está disponible: $startupDirectory"
 }
 
+$taskUserSid = ([Security.Principal.NTAccount]::new($TaskUser)).Translate(
+    [Security.Principal.SecurityIdentifier]
+).Value
+$userProfileKey = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList\$taskUserSid"
+$taskUserProfile = if (Test-Path -LiteralPath $userProfileKey) {
+    [Environment]::ExpandEnvironmentVariables(
+        (Get-ItemPropertyValue -LiteralPath $userProfileKey -Name ProfileImagePath)
+    )
+}
 $codeCandidates = @(
+    $(if ($taskUserProfile) {
+        Join-Path $taskUserProfile "AppData\Local\Programs\Microsoft VS Code\Code.exe"
+    }),
     (Join-Path $env:LOCALAPPDATA "Programs\Microsoft VS Code\Code.exe"),
     (Join-Path $env:ProgramFiles "Microsoft VS Code\Code.exe"),
     (Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::ProgramFilesX86)) `
