@@ -7,6 +7,7 @@ const API_BASE = (window.NEXUS_API_URL || (window.location.protocol === "https:"
   : `${API_PROTOCOL}//${API_HOST}:5000/api`)).replace(/\/$/, "");
 window.NEXUS_API_URL = API_BASE;
 const CART_KEY = "nexus-cart-v1";
+const LAST_PAYMENT_KEY = "nexus-last-payment-v1";
 const money = new Intl.NumberFormat("es-CO", {
   style: "currency",
   currency: "COP",
@@ -23,6 +24,7 @@ const state = {
   backendReady: false
 };
 let latestRegisteredOrder = null;
+let latestPaymentRecord = readLatestPaymentRecord();
 
 const $ = (selector) => document.querySelector(selector);
 
@@ -37,6 +39,40 @@ function readCart() {
 
 function persistCart() {
   localStorage.setItem(CART_KEY, JSON.stringify(state.cart));
+}
+
+function readLatestPaymentRecord() {
+  try {
+    const record = JSON.parse(sessionStorage.getItem(LAST_PAYMENT_KEY) || "null");
+    if (!record || !/^PAY-\d{6}-[A-F0-9]{10}$/i.test(record.payment_code) ||
+      !Array.isArray(record.items) ||
+      record.items.some((item) => typeof item.product_id !== "string" || !item.product_id)) {
+      return null;
+    }
+    return record;
+  } catch {
+    return null;
+  }
+}
+
+function rememberPaymentRecord(order) {
+  latestPaymentRecord = {
+    payment_code: order.payment_code,
+    number: order.number,
+    status: order.status,
+    total: order.total,
+    created_at: order.created_at,
+    items: order.items.map((item) => ({
+      product_id: item.product_id,
+      product_name: item.product_name,
+      quantity: item.quantity
+    }))
+  };
+  try {
+    sessionStorage.setItem(LAST_PAYMENT_KEY, JSON.stringify(latestPaymentRecord));
+  } catch {
+    showToast("El código PAY es válido, pero el navegador no permitió conservarlo en las fichas.", "error");
+  }
 }
 
 function escapeHtml(value) {
@@ -232,6 +268,22 @@ function productOfficialSource(product) {
   return "";
 }
 
+function productPaymentCard(product) {
+  const payment = latestPaymentRecord?.items.some((item) => item.product_id === product.id)
+    ? latestPaymentRecord
+    : null;
+  if (!payment) {
+    return `<section class="product-pay-card"><div><span class="product-pay-label">CÓDIGO PAY</span><p>El código se genera al registrar una solicitud que incluya este producto. Si ya tienes un PAY, puedes consultarlo en la barra de verificación.</p></div><button class="button button-outline" type="button" data-open-verify>Ir a verificar</button></section>`;
+  }
+  return `<section class="product-pay-card product-pay-card-ready"><div><span class="product-pay-label">CÓDIGO PAY DE TU SOLICITUD</span><code class="product-pay-code">${escapeHtml(payment.payment_code)}</code><p>Orden ${escapeHtml(payment.number)} · ${escapeHtml(payment.status)}. Escríbelo en el verificador para consultar su estado.</p></div><button class="button button-outline" type="button" data-detail-verify="${escapeHtml(payment.payment_code)}">Verificar PAY</button></section>`;
+}
+
+function focusPaymentVerifier() {
+  $("#product-detail-modal").close();
+  $("#verify-form").scrollIntoView({ behavior: "smooth", block: "center" });
+  $("#verify-code").focus({ preventScroll: true });
+}
+
 function openProductDetails(productId) {
   const product = state.products.find((entry) => entry.id === productId);
   if (!product) return;
@@ -252,6 +304,7 @@ function openProductDetails(productId) {
         <h2 id="product-detail-title">${escapeHtml(product.name)}</h2>
         <p class="product-detail-description">${escapeHtml(productDisplayDescription(product))}</p>
         <div class="product-detail-price"><small>PRECIO DE REFERENCIA · COP</small><strong>${money.format(product.price)}</strong><span>Consultado: ${escapeHtml(checkedOn)}. El vendedor puede actualizar el precio o inventario.</span></div>
+        ${productPaymentCard(product)}
         <section class="product-detail-section"><h3>Antes de comprar</h3><ul>${checks}</ul></section>
         <div class="product-detail-source-wrap">${source}</div>
         <div class="product-detail-actions">
@@ -408,6 +461,8 @@ $("#product-detail-content").addEventListener("click", (event) => {
   const addButton = event.target.closest("[data-detail-add]");
   const buyButton = event.target.closest("[data-detail-buy]");
   const quoteButton = event.target.closest("[data-detail-quote]");
+  const verifyButton = event.target.closest("[data-detail-verify]");
+  const openVerifyButton = event.target.closest("[data-open-verify]");
   if (addButton) {
     addToCart(addButton.dataset.detailAdd);
     $("#product-detail-modal").close();
@@ -418,6 +473,12 @@ $("#product-detail-content").addEventListener("click", (event) => {
   } else if (quoteButton) {
     const product = state.products.find((entry) => entry.id === quoteButton.dataset.detailQuote);
     if (product) downloadQuote(product);
+  } else if (verifyButton) {
+    $("#verify-code").value = verifyButton.dataset.detailVerify;
+    focusPaymentVerifier();
+    $("#verify-form").requestSubmit();
+  } else if (openVerifyButton) {
+    focusPaymentVerifier();
   }
 });
 $(".checkout-open").setAttribute("aria-label", "Crear solicitud de compra simulada");
@@ -439,6 +500,7 @@ $("#checkout-form").addEventListener("submit", async (event) => {
       })
     });
     latestRegisteredOrder = result.order;
+    rememberPaymentRecord(result.order);
     $("#order-download-label").textContent = `Solicitud ${result.order.payment_code} registrada. Descarga su constancia simulada.`;
     $("#order-download").hidden = false;
     state.cart = {};
@@ -446,6 +508,9 @@ $("#checkout-form").addEventListener("submit", async (event) => {
     refreshCart();
     $("#checkout-modal").close();
     $("#checkout-form").reset();
+    $("#verify-code").value = result.order.payment_code;
+    await verifyPaymentCode(result.order.payment_code);
+    $("#verify-form").scrollIntoView({ behavior: "smooth", block: "center" });
     showToast(`Compra ${result.order.payment_code} registrada. Descargué tu comprobante con el código.`, "success");
   } catch (error) {
     showToast(error.message || "No se pudo registrar la solicitud.", "error");
@@ -461,22 +526,37 @@ document.querySelectorAll(".admin-open").forEach((button) => {
   });
 });
 
-$("#verify-form").addEventListener("submit", async (event) => {
-  event.preventDefault();
+async function verifyPaymentCode(rawCode) {
   const result = $("#verify-result");
-  const code = $("#verify-code").value.trim();
-  if (!code) return;
+  const submit = $("#verify-submit");
+  const code = rawCode.trim().toUpperCase();
+  if (!code) {
+    result.hidden = false;
+    result.className = "verify-result verify-fail";
+    result.textContent = "Escribe el código PAY que recibiste al registrar tu solicitud.";
+    return;
+  }
   result.hidden = true;
+  submit.disabled = true;
   try {
     const data = await apiRequest(`/orders/verify/${encodeURIComponent(code)}`);
+    rememberPaymentRecord(data);
     result.hidden = false;
     result.className = "verify-result verify-ok";
-    result.innerHTML = `<b>✓ ${escapeHtml(data.payment_code)}</b> · Orden ${escapeHtml(data.number)} · Estado: <span class="verify-status">${escapeHtml(data.status)}</span> · ${escapeHtml(data.created_at)} · Total ${money.format(data.total)}`;
+    const verifiedItems = data.items.map((item) => `${item.quantity} × ${item.product_name}`).join(", ");
+    result.innerHTML = `<b>✓ ${escapeHtml(data.payment_code)}</b> · Orden ${escapeHtml(data.number)} · Estado: <span class="verify-status">${escapeHtml(data.status)}</span> · ${escapeHtml(data.created_at)} · Total ${money.format(data.total)}<span class="verify-items">Productos: ${escapeHtml(verifiedItems)}</span>`;
   } catch (error) {
     result.hidden = false;
     result.className = "verify-result verify-fail";
     result.textContent = `✕ ${error.message}`;
+  } finally {
+    submit.disabled = false;
   }
+}
+
+$("#verify-form").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  await verifyPaymentCode($("#verify-code").value);
 });
 
 $("#admin-login-form").addEventListener("submit", async (event) => {

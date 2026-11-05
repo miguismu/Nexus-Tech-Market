@@ -41,12 +41,12 @@
         <div class="eyebrow"><span class="eyebrow-line"></span> TU PRÓXIMA IDEA EMPIEZA AQUÍ</div>
         <h1>La tecnología<br>que te lleva <span>más lejos.</span></h1>
         <p>Explora, solicita y haz realidad tus proyectos. Todo el hardware que necesitas, en un solo lugar.</p>
-        <form class="verify-box hero-verify" id="verify-form"><input class="verify-input" id="verify-code" maxlength="40" placeholder="PIN o código PAY-XXXXXX-XXXX" aria-label="PIN o código de compra"><button class="button button-outline verify-button" type="submit">Verificar</button></form>
-        <div class="verify-result" id="verify-result" hidden></div>
         <div class="hero-actions">
           <a class="button button-primary" href="#catalogo">Explorar catálogo <span aria-hidden="true">↗</span></a>
           <span class="hero-note"><span aria-hidden="true">✳</span> Solicitudes con aprobación<br>simulada</span>
         </div>
+        <form class="verify-box hero-verify" id="verify-form"><input class="verify-input" id="verify-code" maxlength="40" placeholder="Pega tu código PAY-XXXXXX-XXXXXXXXXX" aria-label="PIN o código PAY de compra" autocomplete="off"><button class="button button-outline verify-button" id="verify-submit" type="submit">Verificar</button></form>
+        <div class="verify-result" id="verify-result" hidden aria-live="polite"></div>
         <div class="hero-stats" aria-label="Resumen del catálogo"><div><b>40<span>+</span></b><small>Productos</small></div><div><b>9</b><small>Categorías</small></div><div><b>100<span>%</span></b><small>Simulado</small></div></div>
       </div>
       <div class="hero-art hero-art-cover">

@@ -278,6 +278,30 @@ class NexusApiTests(unittest.TestCase):
         self.assertGreater(order["total"], 0)
         self.assertEqual(order["total"], 2 * order["items"][0]["unit_price"])
 
+    def test_payment_code_verification_returns_order_products_without_customer_data(self):
+        order = self.create_order().get_json()["order"]
+        response = self.client.get(f"/api/orders/verify/{order['payment_code'].lower()}")
+
+        self.assertEqual(response.status_code, 200)
+        verified = response.get_json()
+        self.assertEqual(verified["payment_code"], order["payment_code"])
+        self.assertEqual(verified["number"], order["number"])
+        self.assertEqual(
+            verified["items"],
+            [{
+                "product_id": order["items"][0]["product_id"],
+                "product_name": order["items"][0]["product_name"],
+                "quantity": order["items"][0]["quantity"],
+            }],
+        )
+        self.assertNotIn("customer_name", verified)
+        self.assertNotIn("customer_email", verified)
+
+    def test_payment_code_verification_reports_unknown_codes(self):
+        response = self.client.get("/api/orders/verify/PAY-000000-0000000000")
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("código", response.get_json()["error"].lower())
+
     def test_rejection_requires_reason_and_review_is_one_way(self):
         order = self.create_order().get_json()["order"]
         self.assertEqual(

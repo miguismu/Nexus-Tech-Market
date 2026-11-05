@@ -22,6 +22,8 @@ Tienda académica de hardware y tecnología con frontend en HTML, CSS y JavaScri
 
 El catálogo contiene productos sin fichas duplicadas, incluido el Galaxy A55 restaurado. Sus precios e imágenes son referencias: cambian según tienda, variante, inventario y fecha de consulta. El Galaxy A55 usa una ilustración propia y un precio académico orientativo, no una cotización vigente. Las fichas de cotización generan un archivo descargable con código de referencia; al registrar una solicitud, la página genera una constancia de simulación. Ninguno de esos documentos es recibo fiscal, comprobante de pago ni confirmación de compra.
 
+El código PAY identifica una solicitud registrada, no un producto individual ni un pago real. Se muestra en las fichas de los productos incluidos en la última solicitud verificada durante la pestaña actual, se puede copiar en el verificador de la portada y permanece disponible mientras esa pestaña siga abierta. Al completar una solicitud, NEXUS completa el código y consulta su estado automáticamente. La verificación muestra el estado, el total y los productos asociados, sin exponer los datos personales del cliente.
+
 ## Ejecutarlo en Visual Studio Code
 
 1. Abre esta carpeta en VS Code y autoriza las tareas automáticas cuando se solicite.

@@ -290,6 +290,14 @@ def create_app(test_config: dict[str, Any] | None = None) -> Flask:
                 "status": order.status,
                 "total": order.total,
                 "created_at": order.created_at.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+                "items": [
+                    {
+                        "product_id": item.product_id,
+                        "product_name": item.product_name,
+                        "quantity": item.quantity,
+                    }
+                    for item in order.items
+                ],
             })
 
     @app.post("/api/assistant")
