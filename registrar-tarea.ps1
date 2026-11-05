@@ -28,31 +28,56 @@ if ($RunAtSystemStartup) {
             $PythonSitePackages = $storedPythonSite.Trim()
         }
     }
-    $pythonPathFile = Join-Path $PSScriptRoot ".nexus-python-exe"
-    $storedPythonPath = Get-Content $pythonPathFile -Raw -ErrorAction SilentlyContinue
-    $pythonExecutable = if ($storedPythonPath) { $storedPythonPath.Trim() }
-    else { $null }
-    if (-not $pythonExecutable -or
-        -not (Test-Path -LiteralPath $pythonExecutable -PathType Leaf)) {
-        $pythonProcesses = @(Get-CimInstance Win32_Process | Where-Object {
-            $_.ExecutablePath -and $_.CommandLine -match "server\.py" -and
-            $_.CommandLine -match [regex]::Escape($PSScriptRoot)
-        })
-        if ($pythonProcesses.Count -ne 1 -or
-            -not (Test-Path -LiteralPath $pythonProcesses[0].ExecutablePath -PathType Leaf)) {
-            throw "No se pudo identificar una única instalación activa de Python ejecutando la API NEXUS."
-        }
-        $pythonExecutable = $pythonProcesses[0].ExecutablePath
-        [System.IO.File]::WriteAllText(
-            $pythonPathFile,
-            $pythonExecutable,
-            (New-Object System.Text.UTF8Encoding($false))
-        )
-    }
     if (-not $PythonSitePackages -or
         -not (Test-Path -LiteralPath $PythonSitePackages -PathType Container)) {
         throw "La carpeta site-packages de Python de $TaskUser no está disponible."
     }
+    $venvConfig = Join-Path $PSScriptRoot ".venv\pyvenv.cfg"
+    $versionMatch = if (Test-Path -LiteralPath $venvConfig -PathType Leaf) {
+        [regex]::Match(
+            (Get-Content -LiteralPath $venvConfig -Raw),
+            "(?m)^version\s*=\s*(\d+)\.(\d+)\."
+        )
+    }
+    if (-not $versionMatch.Success) {
+        throw "No se pudo leer la versión de Python del entorno virtual del proyecto."
+    }
+    $pythonLauncher = (Get-Command "py.exe" -ErrorAction Stop).Source
+    $machinePythonPrefix = Join-Path $env:ProgramFiles `
+        "WindowsApps\PythonSoftwareFoundation.Python.$($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value)_"
+    $machinePython = @(
+        & $pythonLauncher -0p | ForEach-Object {
+            if ($_ -match "^\s*-\S+\s+(?:\*\s+)?(?<path>.+?\.exe)\s*$") {
+                $candidate = $Matches.path.Trim()
+                if ($candidate.StartsWith(
+                        $machinePythonPrefix,
+                        [StringComparison]::OrdinalIgnoreCase
+                    ) -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+                    $candidate
+                }
+            }
+        }
+    ) | Select-Object -First 1
+    if (-not $machinePython) {
+        throw "No se encontró Python $($versionMatch.Groups[1].Value).$($versionMatch.Groups[2].Value) accesible desde SYSTEM."
+    }
+    $priorPythonPath = $env:PYTHONPATH
+    try {
+        $env:PYTHONPATH = $PythonSitePackages
+        & $machinePython -c "import flask, sqlalchemy, waitress"
+        if ($LASTEXITCODE -ne 0) {
+            throw "El Python del sistema no puede importar Flask, SQLAlchemy y Waitress desde .venv."
+        }
+    }
+    finally {
+        $env:PYTHONPATH = $priorPythonPath
+    }
+    $pythonPathFile = Join-Path $PSScriptRoot ".nexus-python-exe"
+    [System.IO.File]::WriteAllText(
+        $pythonPathFile,
+        $machinePython,
+        (New-Object System.Text.UTF8Encoding($false))
+    )
     $pythonSitePathFile = Join-Path $PSScriptRoot ".nexus-python-site"
     [System.IO.File]::WriteAllText(
         $pythonSitePathFile,
@@ -223,6 +248,68 @@ if (-not $RunAtSystemStartup) {
         $task.Triggers[0].CimClass.CimClassName -notmatch "LogonTrigger" -or
         $actualUserSid -ne $expectedUserSid) {
         throw "La tarea no quedó configurada para iniciar la API con la cuenta local del usuario al iniciar sesión."
+    }
+}
+if ($RunAtSystemStartup) {
+    $apiHealthUrl = "http://127.0.0.1:5000/api/health"
+    $apiDeadline = (Get-Date).AddSeconds(45)
+    $apiReady = $false
+    while ((Get-Date) -lt $apiDeadline) {
+        try {
+            $response = Invoke-RestMethod -Uri $apiHealthUrl `
+                -TimeoutSec 3 -ErrorAction Stop
+            if ($response.status -eq "ok") {
+                $apiReady = $true
+                break
+            }
+        }
+        catch {
+            Start-Sleep -Seconds 1
+        }
+    }
+    if (-not $apiReady) {
+        $serverErrorLog = Join-Path $PSScriptRoot "nexus-server-error.log"
+        $detail = if (Test-Path -LiteralPath $serverErrorLog -PathType Leaf) {
+            (Get-Content -LiteralPath $serverErrorLog -Tail 10) -join "`n"
+        }
+        else {
+            "Revisa nexus-guardian.log para obtener detalles."
+        }
+        throw "La API no respondió correctamente después de iniciar el supervisor SYSTEM. $detail"
+    }
+
+    $siteHealthUrl = "https://localhost:5500/api/health"
+    $siteCertificate = Join-Path $PSScriptRoot "certs\localhost.crt"
+    if (-not (Test-Path -LiteralPath $siteCertificate -PathType Leaf)) {
+        throw "No se encontró el certificado local para verificar el sitio HTTPS: $siteCertificate"
+    }
+    $curlPath = Join-Path $env:SystemRoot "System32\curl.exe"
+    if (-not (Test-Path -LiteralPath $curlPath -PathType Leaf)) {
+        throw "No se encontró curl.exe para verificar el sitio HTTPS local."
+    }
+    $siteDeadline = (Get-Date).AddSeconds(45)
+    $siteReady = $false
+    while ((Get-Date) -lt $siteDeadline) {
+        $siteStatus = & $curlPath --cacert $siteCertificate --silent `
+            --show-error --max-time 5 --output NUL --write-out "%{http_code}" `
+            $siteHealthUrl 2>$null
+        if ($LASTEXITCODE -eq 0 -and $siteStatus -eq "200") {
+            $siteReady = $true
+            break
+        }
+        Start-Sleep -Seconds 1
+    }
+    if (-not $siteReady) {
+        throw "El sitio HTTPS local no respondió con HTTP 200 después de iniciar el supervisor SYSTEM."
+    }
+
+    $userTaskName = "NEXUS-SiempreActivo-Usuario"
+    $userTask = Get-ScheduledTask -TaskName $userTaskName -ErrorAction SilentlyContinue
+    if ($userTask) {
+        if ($userTask.State -eq "Running") {
+            Stop-ScheduledTask -TaskName $userTaskName
+        }
+        Disable-ScheduledTask -TaskName $userTaskName | Out-Null
     }
 }
 

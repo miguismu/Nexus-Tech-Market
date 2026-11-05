@@ -10,10 +10,14 @@ $pythonSitePathFile = Join-Path $root ".nexus-python-site"
 $venvPython = Join-Path $root ".venv\Scripts\python.exe"
 $script:lastEndpointError = "sin detalles"
 $script:runningAsSystem = [Security.Principal.WindowsIdentity]::GetCurrent().IsSystem
-$script:pythonExecutable = if (Test-Path -LiteralPath $venvPython -PathType Leaf) {
+$script:pythonExecutable = if ($script:runningAsSystem -and
+    (Test-Path -LiteralPath $pythonPathFile -PathType Leaf)) {
+    (Get-Content -LiteralPath $pythonPathFile -Raw -Encoding UTF8).Trim()
+}
+elseif (Test-Path -LiteralPath $venvPython -PathType Leaf) {
     $venvPython
 }
-elseif (Test-Path -LiteralPath $pythonPathFile) {
+elseif (Test-Path -LiteralPath $pythonPathFile -PathType Leaf) {
     (Get-Content -LiteralPath $pythonPathFile -Raw -Encoding UTF8).Trim()
 }
 else {
@@ -92,10 +96,44 @@ function Start-Api {
             $script:pythonSitePackages
         }
     }
-    $starter = Start-Process -FilePath $script:pythonExecutable `
-        -ArgumentList "-X utf8 `"$apiStarter`"" `
-        -WorkingDirectory $root -WindowStyle Hidden -PassThru
-    $starter.WaitForExit(30000) | Out-Null
+    $apiServer = Join-Path $root "server.py"
+    $apiEntryPoint = if ($script:runningAsSystem) { $apiServer } else { $apiStarter }
+    if ($script:runningAsSystem) {
+        $env:NEXUS_HTTPS = "true"
+        foreach ($secretFile in @(
+                (Join-Path $root ".admin-code"),
+                (Join-Path $root ".session-secret")
+            )) {
+            if (-not (Test-Path -LiteralPath $secretFile -PathType Leaf)) {
+                throw "No se encontró el archivo requerido para el inicio seguro de NEXUS: $([IO.Path]::GetFileName($secretFile))"
+            }
+            $secret = (Get-Content -LiteralPath $secretFile -Raw -Encoding UTF8).Trim()
+            if (-not $secret) {
+                throw "El archivo de seguridad de NEXUS está vacío: $([IO.Path]::GetFileName($secretFile))"
+            }
+            if ([IO.Path]::GetFileName($secretFile) -eq ".admin-code") {
+                $env:NEXUS_ADMIN_CODE = $secret
+            }
+            else {
+                $env:NEXUS_SESSION_SECRET = $secret
+            }
+        }
+    }
+
+    try {
+        $starter = Start-Process -FilePath $script:pythonExecutable `
+            -ArgumentList "-X utf8 `"$apiEntryPoint`"" `
+            -RedirectStandardOutput (Join-Path $root "nexus-server.log") `
+            -RedirectStandardError (Join-Path $root "nexus-server-error.log") `
+            -WorkingDirectory $root -WindowStyle Hidden -PassThru
+        $starter.WaitForExit(30000) | Out-Null
+    }
+    finally {
+        if ($script:runningAsSystem) {
+            Remove-Item Env:NEXUS_ADMIN_CODE -ErrorAction SilentlyContinue
+            Remove-Item Env:NEXUS_SESSION_SECRET -ErrorAction SilentlyContinue
+        }
+    }
     if (-not (Test-Endpoint $apiUrl)) {
         Write-Log "La API sigue sin responder ($script:lastEndpointError). Se reintentará en el siguiente ciclo."
     }
