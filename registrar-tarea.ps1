@@ -309,7 +309,7 @@ if ($RunAtSystemStartup) {
         if ($userTask.State -eq "Running") {
             Stop-ScheduledTask -TaskName $userTaskName
         }
-        Disable-ScheduledTask -TaskName $userTaskName | Out-Null
+        Enable-ScheduledTask -TaskName $userTaskName | Out-Null
     }
 }
 
