@@ -235,6 +235,19 @@ if ($script:runningAsSystem) {
     }
 }
 else {
+    $systemTask = Get-ScheduledTask -TaskName "NEXUS-SiempreActivo" `
+        -ErrorAction SilentlyContinue
+    $systemGuardianIsActive = $systemTask -and
+        $systemTask.State -eq "Running" -and
+        $systemTask.Principal.UserId -match "(^|\\)SYSTEM$" -and
+        @(
+            $systemTask.Triggers |
+                Where-Object { $_.CimClass.CimClassName -match "BootTrigger" }
+        ).Count -gt 0
+    if ($systemGuardianIsActive) {
+        Write-Log "Guardian de usuario omitido: la tarea SYSTEM ya supervisa NEXUS al iniciar Windows."
+        exit 0
+    }
     Write-Log "Guardian NEXUS iniciado en la sesión de Windows."
 }
 try {
